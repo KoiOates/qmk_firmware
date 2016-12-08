@@ -10,9 +10,10 @@
 #define PLVR 4 // plover layer
 #define MDIA 5 // media keys
 #define LEAN 6 // keys you can lean on
-#define FUNX 7//
-#define SWCH 8 // switch board, might not work the way I hope
-#define VIMK 9 // vim normal mode partial emulation
+#define SYMB 7 // keys you can lean on
+#define FUNX 8//
+#define SWCH 9 // switch board, might not work the way I hope
+#define VIMK 10 // vim normal mode partial emulation
 
 #define MUL   20 // mouse up left
 #define MUR   21 // mouse up right
@@ -66,7 +67,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         // right hand
              TO(PLVR),     KC_6,   KC_7,           KC_8,          KC_9,    KC_0,          KC_MINS,
              TO(MDIA),     KC_Y,   KC_U,           KC_I,          KC_O,    KC_P,          GUI_T(KC_BSLS),
-                           KC_H,   KC_J,           KC_K,          KC_L,    LT(MDIA, KC_SCLN),  LT(FUNX, KC_QUOT),
+                 LT(SYMB, KC_H),   KC_J,           LT(SYMB, KC_K),          KC_L,    LT(MDIA, KC_SCLN),  LT(FUNX, KC_QUOT),
          LT(LEAN, KC_DELT),  KC_N,   KC_M,        KC_COMM,       KC_DOT,  KC_SLSH,   KC_RSFT,
                           ALT_T(KC_UP), MT(MOD_LCTL | MOD_LALT, KC_DOWN), MT(MOD_LCTL | MOD_LSFT, KC_LBRC),   KC_RBRC,  KC_FN1,
              KC_LALT,        GUI_T(KC_ESC),
@@ -116,24 +117,24 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  *                                 `--------------------'       `--------------------'
  */
 
-// SYMBOLS
+// Numeric Data Entry
 
 [NENT] = KEYMAP(
        // left hand
-       KC_TRNS,      KC_F1,  KC_F2,  KC_F3,         KC_F4,      KC_F5,    KC_TRNS,
-       KC_TRNS,    KC_TRNS,KC_TRNS,  S(KC_TAB),     KC_UP,      KC_TAB,   TO(BASE),
-       TO(BASE),   KC_TRNS,KC_TRNS,  KC_LEFT,       KC_DOWN,    KC_RGHT,
-       KC_TRNS,    KC_TRNS,KC_TRNS,  KC_TRNS,       KC_TRNS,    KC_TRNS,  KC_ENT,
-          KC_TRNS, KC_TRNS,KC_TRNS,  KC_TRNS,       KC_TRNS,
+       KC_TRNS,      KC_F1,           KC_F2,  KC_F3,         KC_F4,      KC_F5,    KC_TRNS,
+       KC_TRNS,    KC_TRNS,         KC_TRNS,  S(KC_TAB),     KC_UP,      KC_TAB,   TO(BASE),
+       TO(BASE),   KC_TRNS,         KC_TRNS,  KC_LEFT,       KC_DOWN,    KC_RGHT,
+       KC_TRNS,    KC_TRNS,         KC_TRNS,  KC_TRNS,       KC_TRNS,    KC_ENT,  KC_TRNS,
+          KC_TRNS, KC_TRNS,         KC_TRNS,  KC_TRNS,       KC_TRNS,
                                        KC_TRNS,KC_TRNS,
                                                KC_TRNS,
                                KC_TRNS,KC_TRNS,KC_TRNS,
        // right hand
        KC_TRNS, KC_TRNS,       TO(BASE),       KC_PSLS,          KC_PAST,           KC_TRNS,          KC_TRNS,
        TO(MDIA),KC_TRNS,          KC_7,          KC_8,             KC_9,            KC_MINS,          KC_TRNS,
-                KC_TRNS,        KC_4,          KC_5,             KC_6,              LT(MDIA,S(KC_EQL)), KC_TRNS, 
-       KC_TRNS, TO(DRNL),       KC_1,          KC_2,             KC_3,              KC_ENT,           KC_TRNS, 
-                         ALT_T(KC_0),MT(MOD_LCTL | MOD_LALT, KC_DOT),  MT(MOD_LCTL | MOD_LSFT, KC_COMM),  KC_EQL, KC_TRNS,
+              LT(SYMB, KC_TRNS),  KC_4,          KC_5,             KC_6,              S(KC_EQL),       LT(FUNX, KC_EQL), 
+       KC_TRNS, TO(DRNL),         KC_1,          KC_2,             KC_3,              KC_ENT,           KC_TRNS, 
+                         ALT_T(KC_0),MT(MOD_LCTL | MOD_LALT, KC_DOT),  MT(MOD_LCTL | MOD_LSFT, KC_COMM),  LT(MDIA,KC_ENT), KC_TRNS,
        KC_TRNS, KC_TRNS,
        KC_TRNS,
        KC_TRNS, KC_TRNS, KC_TRNS
@@ -152,7 +153,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         // right hand
              KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
              KC_TRNS,       KC_TRNS,      KC_KP_7,     KC_KP_8,    KC_KP_9,    KC_TRNS,      KC_TRNS,
-                            KC_TRNS,      KC_KP_4,     KC_KP_5,    KC_KP_6,    KC_TRNS,      KC_TRNS,
+                        LT(SYMB, KC_TRNS),KC_KP_4,     KC_KP_5,    KC_KP_6,    KC_TRNS,      KC_TRNS,
              KC_TRNS,       TO(NENT),     KC_KP_1,     KC_KP_2,    KC_KP_3,    KC_TRNS,      KC_TRNS,
                             KC_TRNS,      KC_KP_0,     KC_DOT,  KC_EQL,  KC_TRNS,
         KC_TRNS, KC_TRNS,
@@ -160,27 +161,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TRNS,  KC_TRNS,   KC_TRNS
 ),
 
-/* Keymap 3: Steno for Plover from https://github.com/shayneholmes/tmk_keyboard/commit/11290f8489013018f778627db725160c745e75bd
- *
- * ,--------------------------------------------------.           ,--------------------------------------------------.
- * |        |      |      |      |      |      |      |           |      |      |      |      |      |      |        |
- * |--------+------+------+------+------+-------------|           |------+------+------+------+------+------+--------|
- * |        |   1  |   2  |   3  |   4  |   5  |      |           |      |  6   |  7   |   8  |   9  |  0   |        |
- * |--------+------+------+------+------+------|      |           |      |------+------+------+------+------+--------|
- * |        |   q  |   w  |   e  |   r  |   t  |------|           |------|  y   |  u   |   i  |   o  |  p   |   [    |
- * |--------+------+------+------+------+------|      |           |      |------+------+------+------+------+--------|
- * |        |   a  |   s  |   d  |   f  |   g  |      |           |      |  h   |  j   |   k  |   l  |  ;   |   '    |
- * `--------+------+------+------+------+-------------'           `-------------+------+------+------+------+--------'
- *   |      |      |      |      |      |                                       |      |      |      |      |      |
- *   `----------------------------------'                                       `----------------------------------'
- *                                        ,-------------.       ,-------------.
- *                                        |      |      |       |      |      |
- *                                 ,------|------|------|       |------+------+------.
- *                                 |      |      |      |       |      |      |      |
- *                                 |   c  |   v  |------|       |------|  n   |  m   |
- *                                 |      |      |      |       |      |      |      |
- *                                 `--------------------'       `--------------------'
- */
 
 [PLVR] = KEYMAP(  // layout: layer 4: Steno for Plover
         // left hand
@@ -203,28 +183,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_NO,  KC_N,   KC_M
 ),
 
-
-/* Keymap 2: Media and mouse keys
- *
- * ,--------------------------------------------------.           ,--------------------------------------------------.
- * |        |      |      |      |      |      |      |           |      |      |      |      |      |      |        |
- * |--------+------+------+------+------+-------------|           |------+------+------+------+------+------+--------|
- * |        |      |      | MsUp |      |      |      |           |      |      |      |      |      |      |        |
- * |--------+------+------+------+------+------|      |           |      |------+------+------+------+------+--------|
- * |        |      |MsLeft|MsDown|MsRght|      |------|           |------|      |      |      |      |      |  Play  |
- * |--------+------+------+------+------+------|      |           |      |------+------+------+------+------+--------|
- * |        |      |      |      |      |      |      |           |      |      |      | Prev | Next |      |        |
- * `--------+------+------+------+------+-------------'           `-------------+------+------+------+------+--------'
- *   |      |      |      | Lclk | Rclk |                                       |VolUp |VolDn | Mute |      |      |
- *   `----------------------------------'                                       `----------------------------------'
- *                                        ,-------------.       ,-------------.
- *                                        |      |      |       |      |      |
- *                                 ,------|------|------|       |------+------+------.
- *                                 |      |      |      |       |      |      |Brwser|
- *                                 |      |      |------|       |------|      |Back  |
- *                                 |      |      |      |       |      |      |      |
- *                                 `--------------------'       `--------------------'
- */
 
 // MEDIA AND MOUSE
 [MDIA] = KEYMAP(
@@ -253,20 +211,42 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_DELT,        KC_Q,         KC_W,         KC_E,   KC_R,   KC_T,   KC_TRNS,
         KC_TRNS,        KC_A,         KC_S,         KC_D,   KC_F,   KC_G,
         KC_LSFT,        KC_Z,         KC_X,         KC_C,   KC_V,   KC_B,   KC_TRNS,
-        LT(NENT,KC_GRV),KC_QUOT,      LALT(KC_LSFT),  KC_LEFT,KC_RGHT,
-                                              ALT_T(KC_APP),  KC_LGUI,
+        KC_GRV,         KC_QUOT,      LALT(KC_LSFT),  KC_LEFT,KC_RGHT,
+                                                    KC_APP,  KC_LGUI,
                                                               KC_HOME,
                                                KC_SPC,KC_BSPC,KC_END,
         // right hand
              KC_TRNS,     KC_6,   KC_7,   KC_8,          KC_9,    KC_0,             KC_MINS,
              KC_TRNS,     KC_Y,   KC_U,   KC_I,          KC_O,    KC_P,             KC_BSLS,
-                           KC_H,   KC_J,   KC_K,          KC_L,    LT(MDIA, KC_SCLN),GUI_T(KC_QUOT),
+                          KC_H,   KC_J,   KC_K,          KC_L,    KC_SCLN,          KC_QUOT,
              KC_TRNS, KC_N,   KC_M,   KC_COMM,       KC_DOT,  KC_SLSH,          KC_RSFT,
                                   KC_UP,  KC_DOWN,KC_LBRC,KC_RBRC,          KC_FN1,
-             KC_LALT,        CTL_T(KC_ESC),
+             KC_LALT,        KC_ESC,
              KC_PGUP,
              KC_PGDN,KC_TAB, KC_ENT
     ),
+
+[SYMB] = KEYMAP(
+       // left hand
+       M(0),   KC_F1,  KC_F2,  KC_F3,  KC_F4,  KC_F5,  KC_TRNS,
+       KC_TRNS,KC_EXLM,KC_AT,  KC_LCBR,KC_RCBR,KC_PIPE,KC_TRNS,
+       KC_TRNS,KC_HASH,KC_DLR, KC_LPRN,KC_RPRN,KC_GRV,
+       KC_TRNS,KC_PERC,KC_CIRC,KC_LBRC,KC_RBRC,KC_TILD,KC_TRNS,
+          EPRM,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
+                                       KC_TRNS,KC_TRNS,
+                                               KC_TRNS,
+                               KC_TRNS,KC_TRNS,KC_TRNS,
+       // right hand
+       KC_TRNS, KC_TRNS,   KC_TRNS,  KC_TRNS,   KC_TRNS,   KC_TRNS,  KC_TRNS,
+       KC_TRNS, KC_TRNS,   KC_TRNS,   KC_TRNS,    KC_TRNS,    KC_TRNS, KC_TRNS,
+                KC_TRNS, KC_TRNS,   KC_TRNS,    KC_TRNS,    KC_TRNS, KC_TRNS,
+       KC_TRNS, KC_TRNS, KC_TRNS,   KC_TRNS,    KC_TRNS,    KC_TRNS, KC_TRNS,
+                         KC_TRNS,KC_TRNS,  KC_TRNS,    KC_TRNS,  KC_TRNS,
+       KC_TRNS, KC_TRNS,
+       KC_TRNS,
+       KC_TRNS, KC_TRNS, KC_TRNS
+),
+
 
 [FUNX] = KEYMAP(  // Blank template keymap
         // left hand
@@ -516,6 +496,9 @@ void matrix_scan_user(void) {
             ergodox_right_led_1_on();
             break;
         case CPLK :
+            ergodox_right_led_2_on();
+            break;
+        case SYMB:
             ergodox_right_led_2_on();
             break;
         case NENT:
