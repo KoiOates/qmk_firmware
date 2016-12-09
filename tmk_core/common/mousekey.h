@@ -36,7 +36,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MOUSEKEY_DELAY 300
 #endif
 #ifndef MOUSEKEY_INTERVAL
-#define MOUSEKEY_INTERVAL 50
+#define MOUSEKEY_INTERVAL 10
 #endif
 #ifndef MOUSEKEY_MAX_SPEED
 #define MOUSEKEY_MAX_SPEED 10
@@ -69,6 +69,7 @@ void mousekey_on(uint8_t code);
 void mousekey_off(uint8_t code);
 void mousekey_clear(void);
 void mousekey_send(void);
+void mousekey_rawreport(int16_t x, int16_t y);
 
 #ifdef __cplusplus
 }

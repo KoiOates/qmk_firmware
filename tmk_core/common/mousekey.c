@@ -168,6 +168,47 @@ void mousekey_off(uint8_t code)
         mousekey_repeat = 0;
 }
 
+void mousekey_rawreport(uint16_t x, uint16_t y) {
+    uint16_t xreps = x / MOUSEKEY_MOVE_MAX + 1;
+    uint16_t xrem = x % MOUSEKEY_MOVE_MAX;
+    uint16_t yreps = y / MOUSEKEY_MOVE_MAX + 1;
+    uint16_t yrem = y % MOUSEKEY_MOVE_MAX;
+    uint16_t i;
+    uint8_t xp;
+    uint8_t yp;
+
+    mousekey_clear();
+    mouse_report.h = 0;
+    mouse_report.v = 0;
+    while(1) {
+        i++;
+        if(xreps > 1){
+            xp = MOUSEKEY_MOVE_MAX; 
+            xreps -= 1;
+        } else if(xreps = 1){
+            xp = xrem;
+            xreps -= 1;
+        } else { // xreps == 1
+            xp = 0;
+        }
+        if(yreps > 1){
+            yp = MOUSEKEY_MOVE_MAX; 
+            yreps -= 1;
+        } else if(yreps = 1){
+            yp = yrem;
+            yreps -= 1;
+        } else { // yreps == 1
+            yp = 0;
+        }
+        if(xreps == 0 && yreps == 0){
+            break;
+        }
+        mouse_report.x = xp;
+        mouse_report.y = yp;
+        mousekey_send();
+    }
+}
+
 void mousekey_send(void)
 {
     mousekey_debug();

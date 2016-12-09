@@ -2,6 +2,7 @@
 #include "debug.h"
 #include "action_layer.h"
 #include "version.h"
+#include "mousekey.h"
 
 #define BASE 0 // default layer
 #define CPLK 1
@@ -15,20 +16,33 @@
 #define SWCH 9 // switch board, might not work the way I hope
 #define VIMK 10 // vim normal mode partial emulation
 
-#define MUL   20 // mouse up left
-#define MUR   21 // mouse up right
-#define MDL   22 // mouse down left
-#define MDR   23 // mouse down right
+#define MUL   50 // mouse up left
+#define MUR   51 // mouse up right
+#define MDL   52 // mouse down left
+#define MDR   53 // mouse down right
+#define MD    54 // mouse down
+#define MR    55 // mouse right
+#define ML    56 // mouse left
+#define MU    57 // mouse up
 
-#define MSPD1 31
-#define MSPD2 32
-#define MSPD3 33
-#define MSPDp 34
+#define MSPD1 9
+#define MSPD2 10
+#define MSPD3 12
+#define MSPD4 13 // no binary stuff here
+#define MSPDp 58
+#define ROLLBACK 99
 
 #define EPRM M(1) // Macro 1: Reset EEPROM
 
-uint8_t mousespeed=3;
+//SEND_STRING
+uint8_t mousespeed = KC_MS_ACCEL2 ;
 uint8_t mousespeedplus=0;
+//uint8_t reaccelerations=0;
+uint8_t acc_chord=0;
+uint8_t trans_chord=0;
+uint8_t mousekeys_down_c = 0;
+uint16_t mdir1=0;
+uint16_t mdir2=0;
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 /* Keymap 0: Basic layer
@@ -187,9 +201,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // MEDIA AND MOUSE
 [MDIA] = KEYMAP(
        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
-       KC_TRNS, KC_TRNS, M(MUL), KC_MS_U, M(MUR), KC_TRNS, TO(NENT),
-       KC_TRNS, M(MSPDp),KC_MS_L, KC_MS_D, KC_MS_R, KC_TRNS,
-       KC_TRNS, KC_TRNS, M(MDL), KC_MS_D, M(MDR), KC_BTN3, KC_TRNS,
+       KC_TRNS, M(ROLLBACK), M(MUL), M(MU),   M(MUR), KC_TRNS, TO(NENT),
+       KC_TRNS, M(MSPDp),M(ML),  M(MD),    M(MR),  KC_TRNS,
+       KC_TRNS, KC_TRNS, M(MDL), M(MD),   M(MDR), KC_BTN3, KC_TRNS,
        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_BTN1, 
                                            KC_TRNS, KC_TRNS,
                                                     KC_TRNS,
@@ -198,7 +212,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
        KC_TRNS,  KC_TRNS, KC_TRNS,        KC_TRNS,         KC_TRNS,        KC_TRNS, KC_TRNS,
        TO(BASE), KC_VOLU, KC_WWW_BACK,    KC_MS_WH_UP,     KC_WWW_FORWARD,    KC_TRNS, KC_TRNS,
                  KC_VOLD, KC_MS_WH_LEFT,  KC_MS_WH_DOWN,   KC_MS_WH_RIGHT,  KC_TRNS, KC_MPLY,
-       KC_TRNS,  KC_MUTE, M(MSPD1),          M(MSPD2),           M(MSPD3),    KC_TRNS, KC_TRNS,
+       KC_TRNS,  KC_MUTE, M(MSPD1),          M(MSPD2),     M(MSPD3),       M(MSPD4),  KC_TRNS,
                           KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
        KC_TRNS, KC_TRNS,
        KC_TRNS,
@@ -336,7 +350,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 
 const uint16_t PROGMEM fn_actions[] = {
-    [1] = ACTION_LAYER_TAP_TOGGLE(NENT)                // FN1 - Momentary Layer 1 (Symbols)
+    [1] = ACTION_LAYER_TAP_TOGGLE(SYMB)                // FN1 - Momentary Layer 1 (Symbols)
 };
 
 void mouseaccel_off(){
@@ -345,58 +359,94 @@ void mouseaccel_off(){
     mousekey_off(KC_MS_ACCEL2);
 };
 
-void movemouse(uint8_t dir1, uint8_t dir2, uint8_t keyon) {
-    uint8_t reaccelerations;
-    if (keyon == 1) {
-        switch(mousespeed) {
-            case 1:
-                mousekey_on(KC_MS_ACCEL0);
-                break;
-            case 2:
-                mousekey_on(KC_MS_ACCEL1);
-                break;
-            case 3:
-                mousekey_on(KC_MS_ACCEL2);
-                break;
-            default:
-                mousekey_on(KC_MS_ACCEL2);
-                break;
-        }
-        if (mousespeedplus == 1){
-            reaccelerations = (mousespeed - 3)*10;
-        }
-
-    } else {
-        mouseaccel_off();
-    }
-
-    if (keyon==1){
-        if (dir2 == -1) {
-            int i;
-            for(i=0;i<reaccelerations;i++){
-                mousekey_on(dir1);
-                mousekey_send();
-            }
-        } else {
-            int i;
-            for(i=0;i<reaccelerations;i++){
-                mousekey_on(dir1);
-                mousekey_on(dir2);
-                mousekey_send();
-            }
-        }
-    } else {//if(keyon==0)
-        if (dir2 == -1){
-            mousekey_off(dir1);
-            mousekey_send();
-        } else {
-            mousekey_off(dir1);
-            mousekey_off(dir2);
-            mousekey_send();
-        }
-    }
+void s_chord_plus(uint8_t mspd) {
+    mspd &= 7;
+    acc_chord |= mspd;
+    trans_chord |= mspd;
 };
 
+void mousebump(int16_t dir1, int16_t dir2, uint8_t cycles, uint8_t speed){
+    int i;
+    mousekey_off(mousespeed);
+    mousekey_on(speed);
+    if (dir2 == -1) {
+        for(i=0; i < cycles; i++){
+            mousekey_on(dir1);
+            mousekey_send();
+        }
+        if (!mousekeys_down_c) mousekey_off(dir1);
+    } else {
+        for(i=0; i < cycles; i++){
+            mousekey_on(dir1);
+            mousekey_on(dir2);
+            mousekey_send();
+        }
+        if (!mousekeys_down_c) {
+            mousekey_off(dir1);
+            mousekey_off(dir2);
+        }
+    }
+    mousekey_send();
+    mousekey_off(speed);
+    mousekey_on(mousespeed);
+    mousekey_send();
+};
+
+
+void s_chord_minus(uint8_t mspd) {
+    mspd &= 7;
+    trans_chord ^= mspd;
+    if(trans_chord == 0 && acc_chord != 0) {
+        if(acc_chord == 1 || acc_chord == 2 || acc_chord == 4) {
+            mousekey_off(mousespeed);
+            switch(acc_chord) {
+                case 1: mousespeed = KC_MS_ACCEL0; break;
+                case 2: mousespeed = KC_MS_ACCEL1; break;
+                case 4: mousespeed = KC_MS_ACCEL2; break;
+            }
+            if (mousekeys_down_c) {
+                mousekey_on(mousespeed);
+                mousekey_send();
+            }
+
+        } else {
+            switch(acc_chord){
+                case 3:
+                    mousebump(mdir1, mdir2, 15, KC_MS_ACCEL1); break;
+                case 5:
+                    mousebump(mdir1, mdir2, 20, KC_MS_ACCEL1); break;
+                case 6:
+                    mousebump(mdir1, mdir2, 18, KC_MS_ACCEL2); break;
+                case 7:
+                    mousebump(mdir1, mdir2, 30, KC_MS_ACCEL2); break;
+            }
+        }
+        acc_chord = 0;
+    }
+
+};
+
+
+void movemouse(int16_t dir1, int16_t dir2, uint8_t keyon, uint8_t speed){
+    if (keyon == 1) {
+        if(speed != -1) {
+            mousekey_on(speed);
+        }
+        mousekeys_down_c += 1 + (0 ? dir2 == -1 : 1);
+    } else {
+        mousekeys_down_c -= (1 + (0 ? dir2 == -1 : 1));
+        if (!mousekeys_down_c) mousekey_off(speed);
+    }
+
+    if (keyon == 1) mousekey_on(dir1);
+              else mousekey_off(dir1);
+    if (dir2 != -1) {
+        if (keyon == 1) mousekey_on(dir2);
+                  else mousekey_off(dir2);
+    }
+    mousekey_send();
+};
+    
 const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
 {
   // MACRODOWN only works in this function
@@ -413,21 +463,26 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
         break;
         // mouse diagonals
         case MSPD1:
-        if (record->event.pressed) {
-            mouseaccel_off();
-        }
+            if (record->event.pressed) s_chord_plus(MSPD1);
+                                   else s_chord_minus(MSPD1);
+            break;
         case MSPD2:
-        if (record->event.pressed) {
-            mouseaccel_off();
-            mousespeed = 2 + mousespeedplus;
+            if (record->event.pressed) s_chord_plus(MSPD2);
+                                   else s_chord_minus(MSPD2);
             break;
-        }
         case MSPD3:
-        if (record->event.pressed) {
-            mouseaccel_off();
-            mousespeed = 3 + mousespeedplus;
+            if (record->event.pressed) s_chord_plus(MSPD3);
+                                   else s_chord_minus(MSPD3);
             break;
-        }
+        case MSPD4:
+            if (record->event.pressed) {
+                mousekey_off(mousespeed);
+                mousespeed = -1;
+            }
+            break;
+        case ROLLBACK:
+            mousekey_rawreport(128,128);
+            break;
         case MSPDp:
         if (record->event.pressed) {
             mouseaccel_off();
@@ -439,36 +494,53 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
             //need to do something so speed updates here too
         }
         break;
+
+        case MD: // mouse down
+        mdir1 = KC_MS_DOWN; mdir2 = -1;
+        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
+                               else movemouse(mdir1, mdir2, 0, mousespeed);
+        break;
+
+        case MR: // mouse right
+        mdir1 = KC_MS_RIGHT; mdir2 = -1;
+        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
+                               else movemouse(mdir1, mdir2, 0, mousespeed);
+        break;
+
+        case ML: // mouse left
+        mdir1 = KC_MS_LEFT; mdir2 = -1;
+        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
+                               else movemouse(mdir1, mdir2, 0, mousespeed);
+        break;
+
+        case MU: // mouse up
+        mdir1 = KC_MS_UP; mdir2 = -1;
+        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
+                               else movemouse(mdir1, mdir2, 0, mousespeed);
+        break;
+
         case MUL: // mouse up left
-        if (record->event.pressed) {
-            movemouse(KC_MS_UP, KC_MS_LEFT, 1);
-        } else {
-            movemouse(KC_MS_UP, KC_MS_LEFT, 0);
-        }
+        mdir1 = KC_MS_UP; mdir2 = KC_MS_LEFT;
+        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
+                               else movemouse(mdir1, mdir2, 0, mousespeed);
         break;
 
         case MUR: // mouse up right
-        if (record->event.pressed) {
-            movemouse(KC_MS_UP, KC_MS_RIGHT, 1);
-        } else {
-            movemouse(KC_MS_UP, KC_MS_RIGHT, 0);
-        }
+        mdir1 = KC_MS_UP; mdir2 = KC_MS_RIGHT;
+        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
+                               else movemouse(mdir1, mdir2, 0, mousespeed);
         break;
 
         case MDL: // mouse down left
-        if (record->event.pressed) {
-            movemouse(KC_MS_DOWN, KC_MS_LEFT, 1);
-        } else {
-            movemouse(KC_MS_DOWN, KC_MS_LEFT, 0);
-        }
+        mdir1 = KC_MS_DOWN; mdir2 = KC_MS_LEFT;
+        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
+                               else movemouse(mdir1, mdir2, 0, mousespeed);
         break;
 
         case MDR: // mouse down right
-        if (record->event.pressed) {
-            movemouse(KC_MS_DOWN, KC_MS_RIGHT, 1);
-        } else {
-            movemouse(KC_MS_DOWN, KC_MS_RIGHT, 0);
-        }
+        mdir1 = KC_MS_DOWN; mdir2 = KC_MS_RIGHT;
+        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
+                               else movemouse(mdir1, mdir2, 0, mousespeed);
         break;
 
       }
@@ -490,6 +562,15 @@ void matrix_scan_user(void) {
     ergodox_right_led_1_off();
     ergodox_right_led_2_off();
     ergodox_right_led_3_off();
+    //if (acc_chord != 0) {
+    //    if (acc_chord & 1) ergodox_right_led_1_on();
+     //   if (acc_chord & 2) ergodox_right_led_2_on();
+      //  if (acc_chord & 4) ergodox_right_led_3_on();
+    if (mousekeys_down_c != 0) {
+        if (mousekeys_down_c & 1) ergodox_right_led_1_on();
+        if (mousekeys_down_c & 2) ergodox_right_led_2_on();
+        if (mousekeys_down_c & 4) ergodox_right_led_3_on();
+    } else {
     switch (layer) {
       // TODO: Make this relevant to the ErgoDox EZ.
         case LEAN:
@@ -533,6 +614,7 @@ void matrix_scan_user(void) {
         default:
             // none
             break;
+    }
     }
 
 };
