@@ -127,6 +127,7 @@ void mousekey_task(void)
 
 void mousekey_on(uint8_t code)
 {
+    onmousedown(code);
     if      (code == KC_MS_UP)       mouse_report.y = move_unit() * -1;
     else if (code == KC_MS_DOWN)     mouse_report.y = move_unit();
     else if (code == KC_MS_LEFT)     mouse_report.x = move_unit() * -1;
@@ -147,6 +148,7 @@ void mousekey_on(uint8_t code)
 
 void mousekey_off(uint8_t code)
 {
+    onmouseup(code);
     if      (code == KC_MS_UP       && mouse_report.y < 0) mouse_report.y = 0;
     else if (code == KC_MS_DOWN     && mouse_report.y > 0) mouse_report.y = 0;
     else if (code == KC_MS_LEFT     && mouse_report.x < 0) mouse_report.x = 0;
@@ -168,14 +170,14 @@ void mousekey_off(uint8_t code)
         mousekey_repeat = 0;
 }
 
-void mousekey_rawreport(uint16_t x, uint16_t y) {
-    uint16_t xreps = x / MOUSEKEY_MOVE_MAX + 1;
-    uint16_t xrem = x % MOUSEKEY_MOVE_MAX;
-    uint16_t yreps = y / MOUSEKEY_MOVE_MAX + 1;
-    uint16_t yrem = y % MOUSEKEY_MOVE_MAX;
-    uint16_t i;
-    uint8_t xp;
-    uint8_t yp;
+void mousekey_rawreport(int16_t x, int16_t y) {
+    int16_t xreps = x / MOUSEKEY_MOVE_MAX + 1;
+    int16_t xrem = x % MOUSEKEY_MOVE_MAX;
+    int16_t yreps = y / MOUSEKEY_MOVE_MAX + 1;
+    int16_t yrem = y % MOUSEKEY_MOVE_MAX;
+    int16_t i;
+    int8_t xp;
+    int8_t yp;
 
     mousekey_clear();
     mouse_report.h = 0;

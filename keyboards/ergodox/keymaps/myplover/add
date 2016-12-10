@@ -1,0 +1,6 @@
+#!/bin/bash
+git add ../../../../tmk_core/common/mousekey.c
+git add ../../../../tmk_core/common/mousekey.h
+git add ./*
+
+

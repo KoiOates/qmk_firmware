@@ -3,6 +3,7 @@
 #include "action_layer.h"
 #include "version.h"
 #include "mousekey.h"
+#include "keycode.h"
 
 #define BASE 0 // default layer
 #define CPLK 1
@@ -201,8 +202,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // MEDIA AND MOUSE
 [MDIA] = KEYMAP(
        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
-       KC_TRNS, M(ROLLBACK), M(MUL), M(MU),   M(MUR), KC_TRNS, TO(NENT),
-       KC_TRNS, M(MSPDp),M(ML),  M(MD),    M(MR),  KC_TRNS,
+       KC_TRNS, M(ROLLBACK), M(MUL),KC_MS_U,   M(MUR), KC_TRNS, TO(NENT),
+       KC_TRNS, M(MSPDp),KC_MS_L,  KC_MS_D,    KC_MS_R,  KC_TRNS,
        KC_TRNS, KC_TRNS, M(MDL), M(MD),   M(MDR), KC_BTN3, KC_TRNS,
        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_BTN1, 
                                            KC_TRNS, KC_TRNS,
@@ -212,7 +213,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
        KC_TRNS,  KC_TRNS, KC_TRNS,        KC_TRNS,         KC_TRNS,        KC_TRNS, KC_TRNS,
        TO(BASE), KC_VOLU, KC_WWW_BACK,    KC_MS_WH_UP,     KC_WWW_FORWARD,    KC_TRNS, KC_TRNS,
                  KC_VOLD, KC_MS_WH_LEFT,  KC_MS_WH_DOWN,   KC_MS_WH_RIGHT,  KC_TRNS, KC_MPLY,
-       KC_TRNS,  KC_MUTE, M(MSPD1),          M(MSPD2),     M(MSPD3),       M(MSPD4),  KC_TRNS,
+       //KC_TRNS,  KC_MUTE, M(MSPD1),          M(MSPD2),     M(MSPD3),       M(MSPD4),  KC_TRNS,
+       KC_TRNS,  KC_MUTE, KC_MS_ACCEL0,          KC_MS_ACCEL1,    KC_MS_ACCEL2,       M(MSPD4),  KC_TRNS,
                           KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
        KC_TRNS, KC_TRNS,
        KC_TRNS,
@@ -447,6 +449,14 @@ void movemouse(int16_t dir1, int16_t dir2, uint8_t keyon, uint8_t speed){
     mousekey_send();
 };
     
+void onmousedown(int8_t id){
+    acc_chord = 1;
+}
+
+void onmouseup(int8_t id){
+    acc_chord = 0;
+}    
+
 const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
 {
   // MACRODOWN only works in this function
@@ -496,27 +506,41 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
         break;
 
         case MD: // mouse down
-        mdir1 = KC_MS_DOWN; mdir2 = -1;
-        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
-                               else movemouse(mdir1, mdir2, 0, mousespeed);
+        
+        if (record->event.pressed) {
+            onmousedown(KC_MS_DOWN);
+            return MACRO(D(MS_DOWN));
+        } else {
+            onmouseup(KC_MS_DOWN);
+        }
         break;
 
         case MR: // mouse right
-        mdir1 = KC_MS_RIGHT; mdir2 = -1;
-        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
-                               else movemouse(mdir1, mdir2, 0, mousespeed);
+        
+        if (record->event.pressed) {
+            onmousedown(KC_MS_RIGHT);
+            return MACRO(D(MS_RIGHT));
+        } else {
+            onmouseup(KC_MS_RIGHT);
+        }
         break;
 
         case ML: // mouse left
-        mdir1 = KC_MS_LEFT; mdir2 = -1;
-        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
-                               else movemouse(mdir1, mdir2, 0, mousespeed);
+        if (record->event.pressed) {
+            onmousedown(KC_MS_LEFT);
+            return MACRO(D(MS_LEFT));
+        } else {
+            onmouseup(KC_MS_LEFT);
+        }
         break;
 
         case MU: // mouse up
-        mdir1 = KC_MS_UP; mdir2 = -1;
-        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
-                               else movemouse(mdir1, mdir2, 0, mousespeed);
+        if (record->event.pressed) {
+            onmousedown(KC_MS_UP);
+            return MACRO(D(MS_UP));
+        } else {
+            onmouseup(KC_MS_UP);
+        }
         break;
 
         case MUL: // mouse up left
@@ -562,14 +586,14 @@ void matrix_scan_user(void) {
     ergodox_right_led_1_off();
     ergodox_right_led_2_off();
     ergodox_right_led_3_off();
-    //if (acc_chord != 0) {
-    //    if (acc_chord & 1) ergodox_right_led_1_on();
-     //   if (acc_chord & 2) ergodox_right_led_2_on();
-      //  if (acc_chord & 4) ergodox_right_led_3_on();
-    if (mousekeys_down_c != 0) {
-        if (mousekeys_down_c & 1) ergodox_right_led_1_on();
-        if (mousekeys_down_c & 2) ergodox_right_led_2_on();
-        if (mousekeys_down_c & 4) ergodox_right_led_3_on();
+    if (acc_chord != 0) {
+        if (acc_chord & 1) ergodox_right_led_1_on();
+        if (acc_chord & 2) ergodox_right_led_2_on();
+        if (acc_chord & 4) ergodox_right_led_3_on();
+    //if (mousekeys_down_c != 0) {
+    //    if (mousekeys_down_c & 1) ergodox_right_led_1_on();
+    //    if (mousekeys_down_c & 2) ergodox_right_led_2_on();
+    //    if (mousekeys_down_c & 4) ergodox_right_led_3_on();
     } else {
     switch (layer) {
       // TODO: Make this relevant to the ErgoDox EZ.
