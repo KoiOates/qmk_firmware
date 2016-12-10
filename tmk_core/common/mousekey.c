@@ -59,6 +59,7 @@ static uint16_t last_timer = 0;
 static uint8_t move_unit(void)
 {
     uint16_t unit;
+    // TODO find out if the really slow one should go first?
     if (mousekey_accel & (1<<0)) {
         unit = (MOUSEKEY_MOVE_DELTA * mk_max_speed)/4;
     } else if (mousekey_accel & (1<<1)) {
@@ -68,7 +69,8 @@ static uint8_t move_unit(void)
     } else if (mousekey_accel & (1<<3)) {
         unit = (MOUSEKEY_MOVE_DELTA * mk_max_speed*2);
     } else if (mousekey_accel & (1<<4)) {
-        unit = 1;
+        unit = (mousekey_repeat == 0) || (mousekey_repeat > 30) ? 1 : 0;
+        //return unit; // otherwise last line makes it a 1
     } else if (mousekey_repeat == 0) {
         unit = MOUSEKEY_MOVE_DELTA;
     } else if (mousekey_repeat >= mk_time_to_max) {
@@ -115,15 +117,21 @@ void mousekey_task(void)
         mousekey_repeat++;
 
 
-    if (mouse_report.x > 0) mouse_report.x = move_unit();
-    if (mouse_report.x < 0) mouse_report.x = move_unit() * -1;
-    if (mouse_report.y > 0) mouse_report.y = move_unit();
-    if (mouse_report.y < 0) mouse_report.y = move_unit() * -1;
+    uint8_t mu;
+    uint8_t xs = 0;
+    uint8_t ys = 0;
+    mu = move_unit();
+    if (mouse_report.x > 0) {mouse_report.x = mu;      xs = 1;}
+    if (mouse_report.x < 0) {mouse_report.x = mu * -1; xs = -1;}
+    if (mouse_report.y > 0) {mouse_report.y = mu;      ys = 1;}
+    if (mouse_report.y < 0) {mouse_report.y = mu * -1; ys = -1;}
 
     /* diagonal move [1/sqrt(2) = 0.7] */
     if (mouse_report.x && mouse_report.y) {
         mouse_report.x *= 0.7;
         mouse_report.y *= 0.7;
+        mouse_report.x = mouse_report.x == 0 ? xs : mouse_report.x;
+        mouse_report.y = mouse_report.y == 0 ? ys : mouse_report.y;
     }
 
     if (mouse_report.v > 0) mouse_report.v = wheel_unit();
@@ -154,7 +162,10 @@ void mousekey_on(uint8_t code)
     else if (code == KC_MS_ACCEL1)   mousekey_accel |= (1<<1);
     else if (code == KC_MS_ACCEL2)   mousekey_accel |= (1<<2);
     else if (code == KC_MS_ACCEL_DOUBLE) mousekey_accel |= (1<<3);
-    else if (code == KC_MS_ACCEL_JUST1) mousekey_accel |= (1<<4);
+    else if (code == KC_MS_ACCEL_JUST1) {
+        mousekey_accel |= (1<<4);
+        mk_delay = 30;
+    }
 }
 
 void mousekey_off(uint8_t code)
@@ -177,7 +188,10 @@ void mousekey_off(uint8_t code)
     else if (code == KC_MS_ACCEL1) mousekey_accel &= ~(1<<1);
     else if (code == KC_MS_ACCEL2) mousekey_accel &= ~(1<<2);
     else if (code == KC_MS_ACCEL_DOUBLE) mousekey_accel &= ~(1<<3);
-    else if (code == KC_MS_ACCEL_JUST1) mousekey_accel &= ~(1<<4);
+    else if (code == KC_MS_ACCEL_JUST1) {
+        mousekey_accel &= ~(1<<4);
+        mk_delay = MOUSEKEY_DELAY; //this stuff doesn't work
+    }
 
     if (mouse_report.x == 0 && mouse_report.y == 0 && mouse_report.v == 0 && mouse_report.h == 0)
         mousekey_repeat = 0;

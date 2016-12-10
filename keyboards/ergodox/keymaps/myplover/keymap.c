@@ -4,6 +4,7 @@
 #include "version.h"
 #include "mousekey.h"
 #include "keycode.h"
+#include "timer.h"
 
 #define BASE 0 // default layer
 #define CPLK 1
@@ -454,13 +455,9 @@ uint8_t lastmousekey = 0;
 uint8_t mousekeyisdown = 0;
 uint8_t mousenudgeison = 0;
 uint8_t mouseslowon = 0;
+static uint16_t msslw_timer = 0;
 
 void onmousedown(int8_t id){
-    if (id != KC_MS_ACCEL_JUST1 && (mousenudgeison & 2)) {
-        // if another mousekey is pressed while mousenudge is about to
-        // change state, keep that from happening.
-        mousenudgeison &= 1;
-    }
     acc_chord += 1;
     mousekeyisdown += 1;
     if (lastmousekey != id){
@@ -490,37 +487,25 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
         break;
         // mouse diagonals
         case MSSLW:
-        //look at what you did. why did you think this would work?
             if (record->event.pressed) {
-                if(mousekeyisdown && mousenudgeison) {
-                    // pressing this during a mousenudge cancels the mousenudge
-                    mousenudgeison = 0;
-                    mousekey_off(KC_MS_ACCEL_JUST1);
-                } else { //toggle nudge behavior
-                    mousenudgeison |= 2;
-                    // 2nd bit on is the almost switching state, needs key release to switch
-                    // Any other mouse key before that cancels the toggle. (unsets that bit)
-                    // (logic for that is in onmousedown)
-                } 
                 mousekey_on(KC_MS_ACCEL0);
                 mouseslowon = 1;
+                msslw_timer = timer_read();
             } else {
-                // Turn off ACCEL0 if it was on
-                if(mouseslowon) {
-                    mouseslowon = 0;
+                if(mouseslowon == 1){
                     mousekey_off(KC_MS_ACCEL0);
-                } 
-                // Toggle mousenudge on only if no mouse keys
-                // were pushed since things started.
-                // (cancellation happens in onmousedown)
-                if(mousenudgeison & 2){
-                    mousenudgeison &= 1;
-                    mousenudgeison = (~mousenudgeison) & 1;
+                    mouseslowon = 0;
                 }
-                if(mousenudgeison) { // And we finally know what to do with this key release
-                    mousekey_on(KC_MS_ACCEL_JUST1);
-                } else {
-                    mousekey_off(KC_MS_ACCEL_JUST1);
+                // should that lessthan be adjusted whether or not mousenudgeison is 1?
+                if(timer_elapsed(msslw_timer) < 120 && mousekeyisdown < 2){
+                    mousenudgeison = ~mousenudgeison;
+                    if(mousenudgeison) { // And we finally know what to do with this key release
+                        mousekey_on(KC_MS_ACCEL_JUST1);
+                        mk_delay = 100; //which gets multiplied to 300 ms when it's used in mousekey.c
+                    } else {
+                        mousekey_off(KC_MS_ACCEL_JUST1);
+                        mk_delay = MOUSEKEY_DELAY;
+                    }
                 }
             }
             break;
