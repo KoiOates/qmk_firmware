@@ -51,6 +51,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MOUSEKEY_WHEEL_TIME_TO_MAX 40
 #endif
 
+#define KC_MS_ACCEL_JUST1 1 
+#define KC_MS_ACCEL_DOUBLE 2
+
 
 #ifdef __cplusplus
 extern "C" {

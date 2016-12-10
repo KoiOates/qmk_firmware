@@ -65,6 +65,10 @@ static uint8_t move_unit(void)
         unit = (MOUSEKEY_MOVE_DELTA * mk_max_speed)/2;
     } else if (mousekey_accel & (1<<2)) {
         unit = (MOUSEKEY_MOVE_DELTA * mk_max_speed);
+    } else if (mousekey_accel & (1<<3)) {
+        unit = (MOUSEKEY_MOVE_DELTA * mk_max_speed*2);
+    } else if (mousekey_accel & (1<<4)) {
+        unit = 1;
     } else if (mousekey_repeat == 0) {
         unit = MOUSEKEY_MOVE_DELTA;
     } else if (mousekey_repeat >= mk_time_to_max) {
@@ -149,6 +153,8 @@ void mousekey_on(uint8_t code)
     else if (code == KC_MS_ACCEL0)   mousekey_accel |= (1<<0);
     else if (code == KC_MS_ACCEL1)   mousekey_accel |= (1<<1);
     else if (code == KC_MS_ACCEL2)   mousekey_accel |= (1<<2);
+    else if (code == KC_MS_ACCEL_DOUBLE) mousekey_accel |= (1<<3);
+    else if (code == KC_MS_ACCEL_JUST1) mousekey_accel |= (1<<4);
 }
 
 void mousekey_off(uint8_t code)
@@ -170,6 +176,8 @@ void mousekey_off(uint8_t code)
     else if (code == KC_MS_ACCEL0) mousekey_accel &= ~(1<<0);
     else if (code == KC_MS_ACCEL1) mousekey_accel &= ~(1<<1);
     else if (code == KC_MS_ACCEL2) mousekey_accel &= ~(1<<2);
+    else if (code == KC_MS_ACCEL_DOUBLE) mousekey_accel &= ~(1<<3);
+    else if (code == KC_MS_ACCEL_JUST1) mousekey_accel &= ~(1<<4);
 
     if (mouse_report.x == 0 && mouse_report.y == 0 && mouse_report.v == 0 && mouse_report.h == 0)
         mousekey_repeat = 0;

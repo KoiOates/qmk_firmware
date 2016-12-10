@@ -30,6 +30,7 @@
 #define MSPD2 10
 #define MSPD3 12
 #define MSPD4 13 // no binary stuff here
+#define MSSLW 14 // no binary stuff here
 #define MSPDp 58
 #define ROLLBACK 99
 
@@ -214,7 +215,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
        TO(BASE), KC_VOLU, KC_WWW_BACK,    KC_MS_WH_UP,     KC_WWW_FORWARD,    KC_TRNS, KC_TRNS,
                  KC_VOLD, KC_MS_WH_LEFT,  KC_MS_WH_DOWN,   KC_MS_WH_RIGHT,  KC_TRNS, KC_MPLY,
        //KC_TRNS,  KC_MUTE, M(MSPD1),          M(MSPD2),     M(MSPD3),       M(MSPD4),  KC_TRNS,
-       KC_TRNS,  KC_MUTE, KC_MS_ACCEL0,          KC_MS_ACCEL1,    KC_MS_ACCEL2,       M(MSPD4),  KC_TRNS,
+       KC_TRNS,  KC_MUTE, M(MSSLW),          KC_MS_ACCEL1,    KC_MS_ACCEL2,       M(MSPD4),  KC_TRNS,
                           KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
        KC_TRNS, KC_TRNS,
        KC_TRNS,
@@ -449,9 +450,19 @@ void movemouse(int16_t dir1, int16_t dir2, uint8_t keyon, uint8_t speed){
     mousekey_send();
 };
     
-uint8_t lastmousekey;
+uint8_t lastmousekey = 0;
+uint8_t mousekeyisdown = 0;
+uint8_t mousenudgeison = 0;
+uint8_t mouseslowon = 0;
+
 void onmousedown(int8_t id){
-    acc_chord = 1;
+    if (id != KC_MS_ACCEL_JUST1 && (mousenudgeison & 2)) {
+        // if another mousekey is pressed while mousenudge is about to
+        // change state, keep that from happening.
+        mousenudgeison &= 1;
+    }
+    acc_chord += 1;
+    mousekeyisdown += 1;
     if (lastmousekey != id){
         mousekey_settimer(3);
     }
@@ -459,7 +470,8 @@ void onmousedown(int8_t id){
 }
 
 void onmouseup(int8_t id){
-    acc_chord = 0;
+    acc_chord -= 1;
+    mousekeyisdown -= 1;
 }    
 
 const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
@@ -477,6 +489,41 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
         }
         break;
         // mouse diagonals
+        case MSSLW:
+        //look at what you did. why did you think this would work?
+            if (record->event.pressed) {
+                if(mousekeyisdown && mousenudgeison) {
+                    // pressing this during a mousenudge cancels the mousenudge
+                    mousenudgeison = 0;
+                    mousekey_off(KC_MS_ACCEL_JUST1);
+                } else { //toggle nudge behavior
+                    mousenudgeison |= 2;
+                    // 2nd bit on is the almost switching state, needs key release to switch
+                    // Any other mouse key before that cancels the toggle. (unsets that bit)
+                    // (logic for that is in onmousedown)
+                } 
+                mousekey_on(KC_MS_ACCEL0);
+                mouseslowon = 1;
+            } else {
+                // Turn off ACCEL0 if it was on
+                if(mouseslowon) {
+                    mouseslowon = 0;
+                    mousekey_off(KC_MS_ACCEL0);
+                } 
+                // Toggle mousenudge on only if no mouse keys
+                // were pushed since things started.
+                // (cancellation happens in onmousedown)
+                if(mousenudgeison & 2){
+                    mousenudgeison &= 1;
+                    mousenudgeison = (~mousenudgeison) & 1;
+                }
+                if(mousenudgeison) { // And we finally know what to do with this key release
+                    mousekey_on(KC_MS_ACCEL_JUST1);
+                } else {
+                    mousekey_off(KC_MS_ACCEL_JUST1);
+                }
+            }
+            break;
         case MSPD1:
             if (record->event.pressed) s_chord_plus(MSPD1);
                                    else s_chord_minus(MSPD1);
@@ -491,8 +538,9 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
             break;
         case MSPD4:
             if (record->event.pressed) {
-                mousekey_off(mousespeed);
-                mousespeed = -1;
+                mousekey_on(KC_MS_ACCEL_DOUBLE);
+            } else {
+                mousekey_off(KC_MS_ACCEL_DOUBLE);
             }
             break;
         case ROLLBACK:
