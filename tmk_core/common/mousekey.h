@@ -68,6 +68,7 @@ void mousekey_task(void);
 void mousekey_on(uint8_t code);
 void mousekey_off(uint8_t code);
 void mousekey_clear(void);
+void mousekey_settimer(uint8_t t);
 void mousekey_send(void);
 void mousekey_rawreport(int16_t x, int16_t y);
 

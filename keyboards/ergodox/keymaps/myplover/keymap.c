@@ -449,8 +449,13 @@ void movemouse(int16_t dir1, int16_t dir2, uint8_t keyon, uint8_t speed){
     mousekey_send();
 };
     
+uint8_t lastmousekey;
 void onmousedown(int8_t id){
     acc_chord = 1;
+    if (lastmousekey != id){
+        mousekey_settimer(3);
+    }
+    lastmousekey = id;
 }
 
 void onmouseup(int8_t id){

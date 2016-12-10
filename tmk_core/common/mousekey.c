@@ -94,6 +94,11 @@ static uint8_t wheel_unit(void)
     return (unit > MOUSEKEY_WHEEL_MAX ? MOUSEKEY_WHEEL_MAX : (unit == 0 ? 1 : unit));
 }
 
+//ionstorm custom function
+void mousekey_settimer(uint8_t t){
+    mousekey_repeat = mousekey_repeat > UINT8_MAX ? UINT8_MAX : t;
+}
+
 void mousekey_task(void)
 {
     if (timer_elapsed(last_timer) < (mousekey_repeat ? mk_interval : mk_delay*10))
@@ -187,7 +192,7 @@ void mousekey_rawreport(int16_t x, int16_t y) {
         if(xreps > 1){
             xp = MOUSEKEY_MOVE_MAX; 
             xreps -= 1;
-        } else if(xreps = 1){
+        } else if(xreps == 1){
             xp = xrem;
             xreps -= 1;
         } else { // xreps == 1
@@ -196,7 +201,7 @@ void mousekey_rawreport(int16_t x, int16_t y) {
         if(yreps > 1){
             yp = MOUSEKEY_MOVE_MAX; 
             yreps -= 1;
-        } else if(yreps = 1){
+        } else if(yreps == 1){
             yp = yrem;
             yreps -= 1;
         } else { // yreps == 1
