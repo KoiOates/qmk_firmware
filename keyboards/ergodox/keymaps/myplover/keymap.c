@@ -9,14 +9,15 @@
 #define BASE 0 // default layer
 #define CPLK 1
 #define NENT 2  // symbols
-#define DRNL 3 // directional keypad
 #define PLVR 4 // plover layer
 #define MDIA 5 // media keys
-#define LEAN 6 // keys you can lean on
-#define SYMB 7 // keys you can lean on
-#define FUNX 8//
-#define SWCH 9 // switch board, might not work the way I hope
-#define VIMK 10 // vim normal mode partial emulation
+#define NUMP 6 // directional keypad
+#define DRNL 7 // directional keypad
+#define LEAN 8 // keys you can lean on
+#define SYMB 9 // keys you can lean on
+#define FUNX 10//
+#define SWCH 11 // switch board, might not work the way I hope
+#define VIMK 12  // vim normal mode partial emulation
 
 #define MUL   50 // mouse up left
 #define MUR   51 // mouse up right
@@ -32,6 +33,7 @@
 #define MSPD3 12
 #define MSPD4 13 // no binary stuff here
 #define MSSLW 14 // no binary stuff here
+#define MSJS1 15 // no binary stuff here
 #define MSPDp 58
 #define ROLLBACK 99
 
@@ -73,19 +75,19 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // Otherwise, it needs KC_*
 [BASE] = KEYMAP(  // layer 0 : default
         // left hand
-        KC_EQL,         KC_1,         KC_2,          KC_3,   KC_4,                    KC_5,   KC_LEFT,
-      LT(FUNX, KC_TAB),KC_Q,         KC_W,           KC_E,   KC_R,                    KC_T,   TO(NENT),
-        TO(BASE),        KC_A,  LT(NENT,KC_S),LT(SWCH,KC_D),   LT(FUNX,KC_F),           KC_G,
-        KC_LSFT,        KC_Z,         KC_X,          KC_C,   KC_V,                    KC_B,    LT(LEAN, S(KC_TAB)),
-        LT(NENT,KC_GRV),KC_QUOT,    LCTL(KC_LSFT),  MT(MOD_LCTL | MOD_LALT, KC_LEFT),  ALT_T(KC_RGHT), //TG(SWCH),
+        KC_EQL,          KC_1,        KC_2,          KC_3,   KC_4,                    KC_5,   KC_LEFT,
+      LT(FUNX, KC_TAB),  KC_Q,        KC_W,          KC_E,   KC_R,                    KC_T,   TO(NENT),
+        TO(BASE), LT(NUMP,KC_A),LT(NUMP,KC_S),LT(SWCH,KC_D),   LT(FUNX,KC_F), LT(FUNX,KC_G),
+        KC_LSFT,         KC_Z,         KC_X,          KC_C,   LT(DRNL,KC_V),              LT(MDIA,KC_B),    LT(LEAN, S(KC_TAB)),
+        LT(NUMP,KC_GRV),KC_QUOT,    LCTL(KC_LSFT),  MT(MOD_LCTL | MOD_LALT, KC_LEFT),  ALT_T(KC_RGHT), //TG(SWCH),
                                               GUI_T(KC_APP),  KC_LGUI,
                                                               KC_HOME,
                                 SFT_T(KC_SPC), CTL_T(KC_BSPC),KC_END,
         // right hand
-             TO(PLVR),     KC_6,   KC_7,           KC_8,          KC_9,    KC_0,          KC_MINS,
-             TO(MDIA),     KC_Y,   KC_U,           KC_I,          KC_O,    KC_P,          GUI_T(KC_BSLS),
-                 LT(SYMB, KC_H),   KC_J,           LT(SYMB, KC_K),          KC_L,    LT(MDIA, KC_SCLN),  LT(FUNX, KC_QUOT),
-         LT(LEAN, KC_DELT),  KC_N,   KC_M,        KC_COMM,       KC_DOT,  KC_SLSH,   KC_RSFT,
+             TO(PLVR),     KC_6,             KC_7,      KC_8,          KC_9,    KC_0,          KC_MINS,
+             TO(MDIA),     KC_Y,             KC_U,      KC_I,          KC_O,    KC_P,          GUI_T(KC_BSLS),
+                 LT(SYMB, KC_H),             KC_J,      LT(SYMB, KC_K),          KC_L,    LT(MDIA, KC_SCLN),  LT(FUNX, KC_QUOT),
+         LT(LEAN, KC_DELT),  LT(NENT,KC_N),   KC_M,        KC_COMM,       KC_DOT,  KC_SLSH,   KC_RSFT,
                           ALT_T(KC_UP), MT(MOD_LCTL | MOD_LALT, KC_DOWN), MT(MOD_LCTL | MOD_LSFT, KC_LBRC),   KC_RBRC,  KC_FN1,
              KC_LALT,        GUI_T(KC_ESC),
              KC_PGUP,
@@ -138,11 +140,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 [NENT] = KEYMAP(
        // left hand
-       KC_TRNS,      KC_F1,           KC_F2,  KC_F3,         KC_F4,      KC_F5,    KC_TRNS,
-       KC_TRNS,    KC_TRNS,         KC_TRNS,  S(KC_TAB),     KC_UP,      KC_TAB,   TO(BASE),
-       TO(BASE),   KC_TRNS,         KC_TRNS,  KC_LEFT,       KC_DOWN,    KC_RGHT,
-       KC_TRNS,    KC_TRNS,         KC_TRNS,  KC_TRNS,       KC_TRNS,    KC_ENT,  KC_TRNS,
-          KC_TRNS, KC_TRNS,         KC_TRNS,  KC_TRNS,       KC_TRNS,
+       KC_TRNS,    KC_TRNS,   KC_TRNS,                   KC_TRNS,          KC_TRNS,     KC_TRNS,    KC_TRNS,
+       KC_TRNS,    KC_TRNS,   S(KC_TAB),                   KC_UP,          KC_TAB,    KC_TRNS,    TO(BASE),
+       TO(BASE),   KC_TRNS,   KC_LEFT,                     KC_DOWN,        KC_RGHT,   KC_TRNS,    
+       KC_TRNS,    KC_TRNS,   KC_TRNS,                     KC_TRNS,        KC_TRNS,   KC_TRNS,    KC_TRNS,
+      KC_TRNS, KC_TRNS, KC_TRNS, MT(MOD_LCTL | MOD_LALT, KC_BSPC), ALT_T(KC_ENT),
                                        KC_TRNS,KC_TRNS,
                                                KC_TRNS,
                                KC_TRNS,KC_TRNS,KC_TRNS,
@@ -150,33 +152,13 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
        KC_TRNS, KC_TRNS,       TO(BASE),       KC_PSLS,          KC_PAST,           KC_TRNS,          KC_TRNS,
        TO(MDIA),KC_TRNS,          KC_7,          KC_8,             KC_9,            KC_MINS,          KC_TRNS,
               LT(SYMB, KC_TRNS),  KC_4,          KC_5,             KC_6,              S(KC_EQL),       LT(FUNX, KC_EQL), 
-       KC_TRNS, TO(DRNL),         KC_1,          KC_2,             KC_3,              KC_ENT,           KC_TRNS, 
+       KC_TRNS, TO(MDIA),         KC_1,          KC_2,             KC_3,              KC_ENT,           KC_TRNS, 
                          ALT_T(KC_0),MT(MOD_LCTL | MOD_LALT, KC_DOT),  MT(MOD_LCTL | MOD_LSFT, KC_COMM),  LT(MDIA,KC_ENT), KC_TRNS,
        KC_TRNS, KC_TRNS,
        KC_TRNS,
        KC_TRNS, KC_TRNS, KC_TRNS
 ),
 
-[DRNL] = KEYMAP(  // Blank template keymap
-        // left hand
-        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
-        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
-        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
-        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
-        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,     
-                                      KC_TRNS, KC_TRNS,
-                                           KC_TRNS,
-                                 KC_TRNS,   KC_TRNS,   KC_TRNS,
-        // right hand
-             KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
-             KC_TRNS,       KC_TRNS,      KC_KP_7,     KC_KP_8,    KC_KP_9,    KC_TRNS,      KC_TRNS,
-                        LT(SYMB, KC_TRNS),KC_KP_4,     KC_KP_5,    KC_KP_6,    KC_TRNS,      KC_TRNS,
-             KC_TRNS,       TO(NENT),     KC_KP_1,     KC_KP_2,    KC_KP_3,    KC_TRNS,      KC_TRNS,
-                            KC_TRNS,      KC_KP_0,     KC_DOT,  KC_EQL,  KC_TRNS,
-        KC_TRNS, KC_TRNS,
-        KC_TRNS,
-        KC_TRNS,  KC_TRNS,   KC_TRNS
-),
 
 
 [PLVR] = KEYMAP(  // layout: layer 4: Steno for Plover
@@ -202,25 +184,68 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 
 // MEDIA AND MOUSE
-[MDIA] = KEYMAP(
-       KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
-       KC_TRNS, M(ROLLBACK), M(MUL),KC_MS_U,   M(MUR), KC_TRNS, TO(NENT),
-       KC_TRNS, M(MSPDp),KC_MS_L,  KC_MS_D,    KC_MS_R,  KC_TRNS,
-       KC_TRNS, KC_TRNS, M(MDL), M(MD),   M(MDR), KC_BTN3, KC_TRNS,
-       KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_BTN1, 
+[MDIA] = KEYMAP(  
+       KC_TRNS, KC_TRNS,        KC_TRNS,   KC_TRNS, KC_TRNS,      KC_TRNS,      KC_TRNS,
+       KC_TRNS, M(ROLLBACK),    S(KC_TAB), KC_MS_U, KC_TAB,  KC_TRNS,      TO(NENT),
+       KC_TRNS, KC_TRNS,       KC_MS_L, KC_MS_D, KC_MS_R, LT(FUNX, KC_TRNS), 
+       KC_TRNS, KC_TRNS,        KC_TRNS,   KC_TRNS, KC_TRNS, KC_TRNS,  KC_TRNS,
+       KC_TRNS, KC_TRNS,        KC_TRNS,   KC_BTN3, KC_BTN1, 
                                            KC_TRNS, KC_TRNS,
                                                     KC_TRNS,
-                                  CTL_T(KC_BTN2), KC_TRNS, KC_TRNS,
+                                        KC_BTN2, KC_TRNS, KC_TRNS,
     // right hand
-       KC_TRNS,  KC_TRNS, KC_TRNS,        KC_TRNS,         KC_TRNS,        KC_TRNS, KC_TRNS,
-       TO(BASE), KC_VOLU, KC_WWW_BACK,    KC_MS_WH_UP,     KC_WWW_FORWARD,    KC_TRNS, KC_TRNS,
-                 KC_VOLD, KC_MS_WH_LEFT,  KC_MS_WH_DOWN,   KC_MS_WH_RIGHT,  KC_TRNS, KC_MPLY,
+       KC_TRNS,  KC_TRNS, KC_VOLD,        KC_MUTE,         KC_VOLU,        KC_TRNS, KC_TRNS,
+       TO(BASE), KC_TRNS, KC_WWW_BACK,    KC_MS_WH_UP,     KC_WWW_FORWARD,    KC_TRNS, KC_TRNS,
+                 LT(SYMB, KC_TRNS), KC_MS_WH_LEFT,  KC_MS_WH_DOWN,   KC_MS_WH_RIGHT,  M(MSPD4), KC_MPLY,
        //KC_TRNS,  KC_MUTE, M(MSPD1),          M(MSPD2),     M(MSPD3),       M(MSPD4),  KC_TRNS,
-       KC_TRNS,  KC_MUTE, M(MSSLW),          KC_MS_ACCEL1,    KC_MS_ACCEL2,       M(MSPD4),  KC_TRNS,
+       KC_TRNS,  TO(NENT), M(MSJS1),       KC_MS_ACCEL0,    KC_MS_ACCEL1, KC_MS_ACCEL2,  KC_TRNS,
                           KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
        KC_TRNS, KC_TRNS,
        KC_TRNS,
        KC_TRNS, KC_TRNS, KC_TRNS
+),
+
+//modes not meant for permanent residence, accessed by momentary switch
+[NUMP] = KEYMAP(
+       // left hand
+        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
+        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
+        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
+        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
+        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,     
+                                      KC_TRNS, KC_TRNS,
+                                           KC_TRNS,
+                                 KC_TRNS,   KC_TRNS,   KC_TRNS,
+       // right hand
+       KC_TRNS, KC_TRNS,        KC_TRNS,       KC_PSLS,          KC_PAST,           KC_TRNS,          KC_TRNS,
+       KC_TRNS, KC_TRNS,          KC_7,          KC_8,             KC_9,            KC_MINS,          KC_TRNS,
+                KC_TRNS,          KC_4,          KC_5,             KC_6,            S(KC_EQL),       LT(FUNX, KC_EQL), 
+       KC_TRNS, KC_TRNS ,         KC_1,          KC_2,             KC_3,            KC_MINS,           KC_TRNS, 
+                         ALT_T(KC_0),MT(MOD_LCTL | MOD_LALT, KC_DOT),  MT(MOD_LCTL | MOD_LSFT, KC_COMM),  LT(MDIA,KC_ENT), KC_TRNS,
+       KC_TRNS, KC_TRNS,
+       KC_TRNS,
+       KC_TRNS, KC_TRNS, SFT_T(KC_BSLS)
+),
+
+[DRNL] = KEYMAP(  // Blank template keymap
+        // left hand
+        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
+        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
+        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
+        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
+        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,     
+                                      KC_TRNS, KC_TRNS,
+                                           KC_TRNS,
+                                 KC_TRNS,   KC_TRNS,   KC_TRNS,
+        // right hand
+             KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
+             KC_TRNS,       KC_TRNS,      KC_KP_7,     KC_KP_8,    KC_KP_9,    KC_TRNS,      KC_TRNS,
+                        LT(SYMB, KC_TRNS),KC_KP_4,     KC_KP_5,    KC_KP_6,    KC_TRNS,      KC_TRNS,
+             KC_TRNS,       TO(NENT),     KC_KP_1,     KC_KP_2,    KC_KP_3,    KC_TRNS,      KC_TRNS,
+                            KC_TRNS,      KC_KP_0,     KC_DOT,  KC_EQL,  KC_TRNS,
+        KC_TRNS, KC_TRNS,
+        KC_TRNS,
+        KC_TRNS,  KC_TRNS,   KC_TRNS
 ),
 
 [LEAN] = KEYMAP(  // layer 0 : default
@@ -256,13 +281,13 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                                KC_TRNS,KC_TRNS,KC_TRNS,
        // right hand
        KC_TRNS, KC_TRNS,   KC_TRNS,  KC_TRNS,   KC_TRNS,   KC_TRNS,  KC_TRNS,
-       KC_TRNS, KC_TRNS,   KC_TRNS,   KC_TRNS,    KC_TRNS,    KC_TRNS, KC_TRNS,
-                KC_TRNS, KC_TRNS,   KC_TRNS,    KC_TRNS,    KC_TRNS, KC_TRNS,
-       KC_TRNS, KC_TRNS, KC_TRNS,   KC_TRNS,    KC_TRNS,    KC_TRNS, KC_TRNS,
-                         KC_TRNS,KC_TRNS,  KC_TRNS,    KC_TRNS,  KC_TRNS,
+       KC_TRNS, KC_TRNS,   KC_TRNS,  KC_TRNS,    KC_TRNS,    KC_TRNS, KC_TRNS,
+                KC_TRNS,   KC_ESC,   KC_TRNS,    KC_TRNS,    KC_TRNS, KC_TRNS,
+       KC_TRNS, KC_TRNS,   KC_TRNS,  KC_TRNS,    KC_TRNS,    KC_TRNS, KC_TRNS,
+                           KC_TRNS,  KC_TRNS,  KC_TRNS,    KC_TRNS,  KC_TRNS,
        KC_TRNS, KC_TRNS,
        KC_TRNS,
-       KC_TRNS, KC_TRNS, KC_TRNS
+       KC_TRNS, KC_TRNS, SFT_T(KC_BSLS)
 ),
 
 
@@ -277,7 +302,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                                            KC_TRNS,
                        SFT_T(KC_BSPC),   KC_LCTL,   KC_TRNS,
         // right hand
-             KC_TRNS,       KC_TRNS,      KC_F10,    KC_F11,       KC_F12,    KC_TRNS,      KC_TRNS,
+             KC_TRNS,       KC_TRNS,      KC_F10,    KC_F11,       KC_F12,    KC_PSCR,      KC_TRNS,
              KC_TRNS,       KC_TRNS,      KC_F7,     KC_F8,        KC_F9,     KC_F11,      KC_TRNS,
                             KC_F11,      KC_F4,     KC_F5,        KC_F6,     KC_F12,      KC_TRNS,
                KC_TRNS,     KC_F12,     KC_F1,     KC_F2,        KC_F3,     KC_TRNS,      KC_TRNS,
@@ -287,7 +312,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TRNS,  KC_LCTL,   SFT_T(KC_TAB)
 ),
 
-[SWCH] = KEYMAP(  // Blank template keymap
+[SWCH] = KEYMAP(  // Convenience gateway to other semipermanent modes.
+        //         Not so sure FUNX needs to be here, maybe not DRNL either..
         // left hand
         KC_NO,       KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,
         KC_NO,       KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_TRNS,
@@ -296,7 +322,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_NO,       KC_NO,      KC_NO,      KC_NO,      KC_NO,     
                                       KC_NO, KC_NO,
                                            KC_NO,
-                                 KC_C,   KC_V,   KC_NO,
+                                 KC_NO,   KC_NO,   KC_NO,
         // right hand
              KC_TRNS,       KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_TRNS,
              KC_TRNS,       KC_NO,      KC_NO,      TO(BASE),      KC_NO,      KC_NO,      KC_TRNS,
@@ -485,7 +511,14 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
           eeconfig_init();
         }
         break;
-        // mouse diagonals
+
+        case MSJS1:
+            if (record->event.pressed) {
+                mousekey_on(KC_MS_ACCEL_JUST1);
+            } else {
+                mousekey_off(KC_MS_ACCEL_JUST1);
+            }
+            break;
         case MSSLW:
             if (record->event.pressed) {
                 mousekey_on(KC_MS_ACCEL0);
@@ -496,15 +529,17 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
                     mousekey_off(KC_MS_ACCEL0);
                     mouseslowon = 0;
                 }
-                // should that lessthan be adjusted whether or not mousenudgeison is 1?
-                if(timer_elapsed(msslw_timer) < 120 && mousekeyisdown < 2){
+                if(timer_elapsed(msslw_timer) < 120){
                     mousenudgeison = ~mousenudgeison;
-                    if(mousenudgeison) { // And we finally know what to do with this key release
+                    if(mousenudgeison) { // mk_delay stuff didn't work
                         mousekey_on(KC_MS_ACCEL_JUST1);
-                        mk_delay = 100; //which gets multiplied to 300 ms when it's used in mousekey.c
+                        // TODO modify mousekey.c and .h  again, give it a skip steps parameter
+                        // which does nothing if zero, returns early from mouse_task if any other
+                        // value and not modulus zero of a counter variable.
+                    //    mk_delay = 100;
                     } else {
                         mousekey_off(KC_MS_ACCEL_JUST1);
-                        mk_delay = MOUSEKEY_DELAY;
+                    //    mk_delay = MOUSEKEY_DELAY; //in fact it doesn't seem to work anywhere, even hard coded
                     }
                 }
             }
@@ -542,69 +577,6 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
             //need to do something so speed updates here too
         }
         break;
-
-        case MD: // mouse down
-        
-        if (record->event.pressed) {
-            onmousedown(KC_MS_DOWN);
-            return MACRO(D(MS_DOWN));
-        } else {
-            onmouseup(KC_MS_DOWN);
-        }
-        break;
-
-        case MR: // mouse right
-        
-        if (record->event.pressed) {
-            onmousedown(KC_MS_RIGHT);
-            return MACRO(D(MS_RIGHT));
-        } else {
-            onmouseup(KC_MS_RIGHT);
-        }
-        break;
-
-        case ML: // mouse left
-        if (record->event.pressed) {
-            onmousedown(KC_MS_LEFT);
-            return MACRO(D(MS_LEFT));
-        } else {
-            onmouseup(KC_MS_LEFT);
-        }
-        break;
-
-        case MU: // mouse up
-        if (record->event.pressed) {
-            onmousedown(KC_MS_UP);
-            return MACRO(D(MS_UP));
-        } else {
-            onmouseup(KC_MS_UP);
-        }
-        break;
-
-        case MUL: // mouse up left
-        mdir1 = KC_MS_UP; mdir2 = KC_MS_LEFT;
-        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
-                               else movemouse(mdir1, mdir2, 0, mousespeed);
-        break;
-
-        case MUR: // mouse up right
-        mdir1 = KC_MS_UP; mdir2 = KC_MS_RIGHT;
-        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
-                               else movemouse(mdir1, mdir2, 0, mousespeed);
-        break;
-
-        case MDL: // mouse down left
-        mdir1 = KC_MS_DOWN; mdir2 = KC_MS_LEFT;
-        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
-                               else movemouse(mdir1, mdir2, 0, mousespeed);
-        break;
-
-        case MDR: // mouse down right
-        mdir1 = KC_MS_DOWN; mdir2 = KC_MS_RIGHT;
-        if (record->event.pressed)  movemouse(mdir1, mdir2, 1, mousespeed);
-                               else movemouse(mdir1, mdir2, 0, mousespeed);
-        break;
-
       }
     return MACRO_NONE;
 };
@@ -624,15 +596,10 @@ void matrix_scan_user(void) {
     ergodox_right_led_1_off();
     ergodox_right_led_2_off();
     ergodox_right_led_3_off();
-    if (acc_chord != 0) {
-        if (acc_chord & 1) ergodox_right_led_1_on();
-        if (acc_chord & 2) ergodox_right_led_2_on();
-        if (acc_chord & 4) ergodox_right_led_3_on();
     //if (mousekeys_down_c != 0) {
     //    if (mousekeys_down_c & 1) ergodox_right_led_1_on();
     //    if (mousekeys_down_c & 2) ergodox_right_led_2_on();
     //    if (mousekeys_down_c & 4) ergodox_right_led_3_on();
-    } else {
     switch (layer) {
       // TODO: Make this relevant to the ErgoDox EZ.
         case LEAN:
@@ -652,7 +619,11 @@ void matrix_scan_user(void) {
             ergodox_right_led_3_on();
             break;
         case MDIA:
-            if (mousespeedplus == 0){
+            if (acc_chord != 0) {
+                if (acc_chord & 1) ergodox_right_led_1_on();
+                if (acc_chord & 2) ergodox_right_led_2_on();
+                if (acc_chord & 4) ergodox_right_led_3_on();
+            } else if (mousespeedplus == 0){
                 ergodox_right_led_2_on();
                 ergodox_right_led_3_on();
             } else {
@@ -677,6 +648,20 @@ void matrix_scan_user(void) {
             // none
             break;
     }
-    }
 
 };
+
+// TODO make transparent keys in capslock, add layer shifters to sdf
+// make a separate momentary number layer for repositioning some punctuation.
+// Not sure if want to move s mods or just include w and a in momentary layer shift status
+// Write a function to add shift keys to symbol layer once momentary keys held long enoug:and make it operate on
+// unshifted characters instead because it currently has too much lag to be useable.
+//
+// KJ, extra escape key in SYMB layer, MDIA tabs and stabs, b3 to leftarrow transparent bottom row
+// double timetomax for mousewheel. move audio to top row because I never use numbers there anyway
+// Changing speed categories. saving momentary JUST1 for later and other purposes. Writing macro MSJS1
+// Purging old mouse directional macros.
+// TODos for an even slower mousekey mode than just1
+// TODO w momentary directional pad mode, a momentary NENT mode, s needs its own numpad, NENT directional pad needs shifted left
+// DONE
+// TODO double tap for  control on shift keys.

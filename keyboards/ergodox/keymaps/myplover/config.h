@@ -5,7 +5,7 @@
 
 #define FORCE_NKRO
 //#define MOUSE_MOVE_DELTA 2
-#define MOUSEKEY_DELAY 30
-#define MOUSEKEY_MAXSPEED 255
+//#define MOUSEKEY_DELAY 175
+//#define MOUSEKEY_MAXSPEED 255
 
 #endif
