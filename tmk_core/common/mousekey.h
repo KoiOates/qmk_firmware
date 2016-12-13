@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef MOUSEKEY_MOVE_DELTA
 #define MOUSEKEY_MOVE_DELTA     5
+//#define MOUSEKEY_MOVE_DELTA     2
 #endif
 #ifndef MOUSEKEY_WHEEL_DELTA
 #define MOUSEKEY_WHEEL_DELTA    1
@@ -48,7 +49,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MOUSEKEY_WHEEL_MAX_SPEED 8
 #endif
 #ifndef MOUSEKEY_WHEEL_TIME_TO_MAX
-#define MOUSEKEY_WHEEL_TIME_TO_MAX 40
+#define MOUSEKEY_WHEEL_TIME_TO_MAX 80
+//#define MOUSEKEY_WHEEL_TIME_TO_MAX 40
 #endif
 
 #define KC_MS_ACCEL_JUST1 1 

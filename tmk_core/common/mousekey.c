@@ -59,17 +59,25 @@ static uint16_t last_timer = 0;
 static uint8_t move_unit(void)
 {
     uint16_t unit;
-    // TODO find out if the really slow one should go first?
+    uint16_t maxmax;
     if (mousekey_accel & (1<<0)) {
-        unit = (MOUSEKEY_MOVE_DELTA * mk_max_speed)/3;
+        unit = (mousekey_repeat < MOUSEKEY_TIME_TO_MAX) ? 1 :
+             mousekey_repeat / (MOUSEKEY_TIME_TO_MAX/2);
+        unit += MOUSEKEY_MOVE_DELTA;
     } else if (mousekey_accel & (1<<1)) {
         unit = (MOUSEKEY_MOVE_DELTA * mk_max_speed);
     } else if (mousekey_accel & (1<<2)) {
-        unit = (MOUSEKEY_MOVE_DELTA * mk_max_speed*2);
+        unit = mousekey_repeat == 1 ? 
+            (MOUSEKEY_MOVE_DELTA * mk_max_speed*3):
+            (MOUSEKEY_MOVE_DELTA * mk_max_speed*2);
     } else if (mousekey_accel & (1<<3)) {
-        unit = (MOUSEKEY_MOVE_DELTA * mk_max_speed*4);
+        unit = mousekey_repeat == 1 ? 
+            (MOUSEKEY_MOVE_DELTA * mousekey_repeat * mk_max_speed*6):
+            (MOUSEKEY_MOVE_DELTA * mousekey_repeat * mk_max_speed*4)/3;
     } else if (mousekey_accel & (1<<4)) {
-        unit = (mousekey_repeat == 0) || (mousekey_repeat > 30) ? 1 : 0;
+        unit = (mousekey_repeat < MOUSEKEY_TIME_TO_MAX) ? 1 :
+             mousekey_repeat / (MOUSEKEY_TIME_TO_MAX/2);
+        //unit = (mousekey_repeat == 0) || (mousekey_repeat > 30) ? 1 : 0;
         //return unit; // otherwise last line makes it a 1
     } else if (mousekey_repeat == 0) {
         unit = MOUSEKEY_MOVE_DELTA;
@@ -120,7 +128,13 @@ void mousekey_task(void)
     uint8_t mu;
     uint8_t xs = 0;
     uint8_t ys = 0;
-    mu = move_unit();
+    if ((mousekey_accel & (1<<4)) && 
+           mousekey_repeat < MOUSEKEY_TIME_TO_MAX * 3 &&
+           mousekey_repeat % 30 != 0){
+        mu = 0;
+    } else {
+        mu = move_unit();
+    }
     if (mouse_report.x > 0) {mouse_report.x = mu;      xs = 1;}
     if (mouse_report.x < 0) {mouse_report.x = mu * -1; xs = -1;}
     if (mouse_report.y > 0) {mouse_report.y = mu;      ys = 1;}

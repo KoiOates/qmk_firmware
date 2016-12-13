@@ -26,6 +26,7 @@
 #define MSPD4 13 // no binary stuff here
 #define MSSLW 14 // no binary stuff here
 #define MSJS1 15 // no binary stuff here
+#define MSAC0 16 // no binary stuff here
 #define MSPDp 58
 #define ROLLBACK 99
 
@@ -194,7 +195,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
        TO(BASE), KC_TRNS, KC_WWW_BACK,    KC_MS_WH_UP,     KC_WWW_FORWARD,    KC_TRNS, KC_TRNS,
                  LT(SYMB, KC_TRNS), KC_MS_WH_LEFT,  KC_MS_WH_DOWN,   KC_MS_WH_RIGHT,  KC_TRNS, KC_MPLY,
        //KC_TRNS,  KC_MUTE, M(MSPD1),          M(MSPD2),     M(MSPD3),       M(MSPD4),  KC_TRNS,
-       KC_TRNS,  TO(NENT), M(MSJS1),       KC_MS_ACCEL0,    KC_MS_ACCEL2, M(MSPD4),  KC_TRNS,
+       KC_TRNS,  TO(NENT), M(MSJS1),      M(MSAC0),    KC_MS_ACCEL2, M(MSPD4),  KC_TRNS,
                           KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
        KC_TRNS, KC_TRNS,
        KC_TRNS,
@@ -483,7 +484,7 @@ void onmousedown(int8_t id){
     acc_chord += 1;
     mousekeyisdown += 1;
     if (lastmousekey != id){
-        mousekey_settimer(3);
+        mousekey_settimer(2);
     }
     lastmousekey = id;
 }
@@ -534,6 +535,16 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
                 mousekey_on(KC_MS_ACCEL_JUST1);
             } else {
                 mousekey_off(KC_MS_ACCEL_JUST1);
+                mousekey_settimer(0);
+            }
+            break;
+        case MSAC0:
+            if (record->event.pressed) {
+                mousekey_on(KC_MS_ACCEL0);
+                mousekey_settimer(0);
+            } else {
+                mousekey_off(KC_MS_ACCEL0);
+                mousekey_settimer(0);
             }
             break;
         case MSSLW:
