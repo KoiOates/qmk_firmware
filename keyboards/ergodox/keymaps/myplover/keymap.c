@@ -206,7 +206,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
        // left hand
         KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
         KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
-        KC_TRNS,       KC_TRNS,      KC_TRNS,      M(DIMR),      M(BRTR),      KC_TRNS,
+        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
         KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
         KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,     
                                       KC_TRNS, KC_TRNS,
@@ -493,7 +493,7 @@ void onmouseup(int8_t id){
     mousekeyisdown -= 1;
 }    
 
-char stringstore[32];
+
 const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
 {
   // MACRODOWN only works in this function
@@ -510,8 +510,12 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
         break;
         case OUTEST:
             if (record->event.pressed) {
-                snprintf(stringstore, 32, "%d, %d, %d", record->event.key.row, record->event.key.col, record->event.pressed);
-                SEND_STRING(QMK_KEYBOARD stringstore);
+                char* stringstore = malloc(32*sizeof(char));
+                snprintf(stringstore, 32, "asdf%dz%dz%d", record->event.key.row, record->event.key.col, record->event.pressed);
+                //SEND_STRING (QMK_KEYBOARD "/" QMK_KEYMAP " @ " QMK_VERSION);
+                send_string(stringstore);
+                //SEND_STRING (itoa(32));
+                free(stringstore);
             } else {
                 layer_off(SYMB);
             }
