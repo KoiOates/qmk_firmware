@@ -19,14 +19,6 @@
 #define SWCH 11 // switch board, might not work the way I hope
 #define VIMK 12  // vim normal mode partial emulation
 
-#define MUL   50 // mouse up left
-#define MUR   51 // mouse up right
-#define MDL   52 // mouse down left
-#define MDR   53 // mouse down right
-#define MD    54 // mouse down
-#define MR    55 // mouse right
-#define ML    56 // mouse left
-#define MU    57 // mouse up
 
 #define MSPD1 9
 #define MSPD2 10
@@ -37,8 +29,12 @@
 #define MSPDp 58
 #define ROLLBACK 99
 
+#define SYMBMOD 60
+#define OUTEST 61
+
 #define EPRM M(1) // Macro 1: Reset EEPROM
 
+//
 //SEND_STRING
 uint8_t mousespeed = KC_MS_ACCEL2 ;
 uint8_t mousespeedplus=0;
@@ -78,7 +74,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_EQL,          KC_1,        KC_2,          KC_3,   KC_4,                    KC_5,   KC_LEFT,
       LT(FUNX, KC_TAB),  KC_Q,        KC_W,          KC_E,   KC_R,                    KC_T,   TO(NENT),
         TO(BASE), LT(NUMP,KC_A),LT(NUMP,KC_S),LT(SWCH,KC_D),   LT(FUNX,KC_F), LT(FUNX,KC_G),
-        KC_LSFT,         KC_Z,         KC_X,          KC_C,   LT(DRNL,KC_V),              LT(MDIA,KC_B),    LT(LEAN, S(KC_TAB)),
+        M(OUTEST),         KC_Z,         KC_X,          KC_C,   LT(DRNL,KC_V),              LT(MDIA,KC_B),    LT(LEAN, KC_TAB),
         LT(NUMP,KC_GRV),KC_QUOT,    LCTL(KC_LSFT),  MT(MOD_LCTL | MOD_LALT, KC_LEFT),  ALT_T(KC_RGHT), //TG(SWCH),
                                               GUI_T(KC_APP),  KC_LGUI,
                                                               KC_HOME,
@@ -87,7 +83,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
              TO(PLVR),     KC_6,             KC_7,      KC_8,          KC_9,    KC_0,          KC_MINS,
              TO(MDIA),     KC_Y,             KC_U,      KC_I,          KC_O,    KC_P,          GUI_T(KC_BSLS),
                  LT(SYMB, KC_H),             KC_J,      LT(SYMB, KC_K),          KC_L,    LT(MDIA, KC_SCLN),  LT(FUNX, KC_QUOT),
-         LT(LEAN, KC_DELT),  LT(NENT,KC_N),   KC_M,        KC_COMM,       KC_DOT,  KC_SLSH,   KC_RSFT,
+         LT(LEAN, KC_DELT),  LT(NENT,KC_N),   KC_M,        KC_COMM,       KC_DOT,  KC_SLSH,   M(SYMBMOD),//KC_RSFT,
                           ALT_T(KC_UP), MT(MOD_LCTL | MOD_LALT, KC_DOWN), MT(MOD_LCTL | MOD_LSFT, KC_LBRC),   KC_RBRC,  KC_FN1,
              KC_LALT,        GUI_T(KC_ESC),
              KC_PGUP,
@@ -131,7 +127,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  *                                        |      |      |       |      |      |
  *                                 ,------|------|------|       |------+------+------.
  *                                 |      |      |      |       |      |      |      |
- *                                 |      |      |------|       |------|      |      |
+                                  |      |      |------|       |------|      |      |
  *                                 |      |      |      |       |      |      |      |
  *                                 `--------------------'       `--------------------'
  */
@@ -210,7 +206,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
        // left hand
         KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
         KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
-        KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
+        KC_TRNS,       KC_TRNS,      KC_TRNS,      M(DIMR),      M(BRTR),      KC_TRNS,
         KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,
         KC_TRNS,       KC_TRNS,      KC_TRNS,      KC_TRNS,      KC_TRNS,     
                                       KC_TRNS, KC_TRNS,
@@ -497,6 +493,7 @@ void onmouseup(int8_t id){
     mousekeyisdown -= 1;
 }    
 
+char stringstore[32];
 const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
 {
   // MACRODOWN only works in this function
@@ -511,6 +508,22 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
           eeconfig_init();
         }
         break;
+        case OUTEST:
+            if (record->event.pressed) {
+                snprintf(stringstore, 32, "%d, %d, %d", record->event.key.row, record->event.key.col, record->event.pressed);
+                SEND_STRING(QMK_KEYBOARD stringstore);
+            } else {
+                layer_off(SYMB);
+            }
+            break;
+
+        case SYMBMOD:
+            if (record->event.pressed) {
+                layer_on(SYMB);
+            } else {
+                layer_off(SYMB);
+            }
+            break;
 
         case MSJS1:
             if (record->event.pressed) {
@@ -586,7 +599,6 @@ void matrix_init_user(void) {
 
 };
 
-
 // Runs constantly in the background, in a loop.
 void matrix_scan_user(void) {
 
@@ -600,6 +612,7 @@ void matrix_scan_user(void) {
     //    if (mousekeys_down_c & 1) ergodox_right_led_1_on();
     //    if (mousekeys_down_c & 2) ergodox_right_led_2_on();
     //    if (mousekeys_down_c & 4) ergodox_right_led_3_on();
+
     switch (layer) {
       // TODO: Make this relevant to the ErgoDox EZ.
         case LEAN:
@@ -644,11 +657,15 @@ void matrix_scan_user(void) {
             ergodox_right_led_2_on();
             ergodox_right_led_3_on();
             break;
+        case NUMP:
+            ergodox_right_led_1_on();
+            ergodox_right_led_2_on();
+            ergodox_right_led_3_on();
+
         default:
             // none
             break;
     }
-
 };
 
 // TODO make transparent keys in capslock, add layer shifters to sdf
@@ -662,6 +679,6 @@ void matrix_scan_user(void) {
 // Changing speed categories. saving momentary JUST1 for later and other purposes. Writing macro MSJS1
 // Purging old mouse directional macros.
 // TODos for an even slower mousekey mode than just1
-// TODO w momentary directional pad mode, a momentary NENT mode, s needs its own numpad, NENT directional pad needs shifted left
+// tODO w momentary directional pad mode, a momentary NENT mode, s needs its own numpad, NENT directional pad needs shifted left
 // DONE
 // TODO double tap for  control on shift keys.
