@@ -62,17 +62,19 @@ static uint8_t move_unit(void)
     uint16_t maxmax;
     if (mousekey_accel & (1<<0)) {
         unit = (mousekey_repeat < MOUSEKEY_TIME_TO_MAX) ? 1 :
-             mousekey_repeat / (MOUSEKEY_TIME_TO_MAX/2);
-        unit += MOUSEKEY_MOVE_DELTA;
+             mousekey_repeat / (MOUSEKEY_TIME_TO_MAX/3);
+        unit += MOUSEKEY_MOVE_DELTA/2;
     } else if (mousekey_accel & (1<<1)) {
         unit = (MOUSEKEY_MOVE_DELTA * mk_max_speed);
     } else if (mousekey_accel & (1<<2)) {
         unit = mousekey_repeat == 1 ? 
-            (MOUSEKEY_MOVE_DELTA * mk_max_speed*3):
+            MOUSEKEY_MOVE_DELTA:
             (MOUSEKEY_MOVE_DELTA * mk_max_speed*2);
     } else if (mousekey_accel & (1<<3)) {
         unit = mousekey_repeat == 1 ? 
-            (MOUSEKEY_MOVE_DELTA * mousekey_repeat * mk_max_speed*6):
+            (MOUSEKEY_MOVE_DELTA * 5):
+            // bigger numbers for the first multiplyer make no difference;
+            // the nudge kludge only allows one report to send.
             (MOUSEKEY_MOVE_DELTA * mousekey_repeat * mk_max_speed*4)/3;
     } else if (mousekey_accel & (1<<4)) {
         unit = (mousekey_repeat < MOUSEKEY_TIME_TO_MAX) ? 1 :
