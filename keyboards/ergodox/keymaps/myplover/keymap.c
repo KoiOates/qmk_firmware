@@ -32,6 +32,8 @@
 
 #define SYMBMOD 60
 #define OUTEST 61
+#define THUMB_SHIFT_TAB 62
+#define THUMB_SHIFT_BS 63
 
 #define EPRM M(1) // Macro 1: Reset EEPROM
 
@@ -73,22 +75,24 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 [BASE] = KEYMAP(  // layer 0 : default
         // left hand
         KC_EQL,          KC_1,        KC_2,          KC_3,   KC_4,                    KC_5,   KC_LEFT,
-      LT(FUNX, KC_TAB),  KC_Q,        KC_W,          KC_E,   KC_R,                    KC_T,   TO(NENT),
-        TO(BASE), LT(NUMP,KC_A),LT(NUMP,KC_S),LT(SWCH,KC_D),   LT(FUNX,KC_F), LT(FUNX,KC_G),
-        M(OUTEST),         KC_Z,         KC_X,          KC_C,   LT(DRNL,KC_V),              LT(MDIA,KC_B),    LT(LEAN, KC_TAB),
-        LT(NUMP,KC_GRV),KC_QUOT,    LCTL(KC_LSFT),  MT(MOD_LCTL | MOD_LALT, KC_BSPC),  ALT_T(KC_SPC), //TG(SWCH),
+      LT(FUNX, KC_TAB),  KC_Q,        LT(NUMP,KC_W),          KC_E,   KC_R,                    KC_T,   TO(NENT),
+        TO(BASE), LT(NENT,KC_A),LT(NUMP,KC_S),LT(SWCH,KC_D),   LT(FUNX,KC_F), LT(FUNX,KC_G),
+        KC_LSFT,         KC_Z,         KC_X,          KC_C,   LT(DRNL,KC_V),              LT(MDIA,KC_B),    LT(LEAN, KC_TAB),
+        LT(NUMP,KC_GRV),KC_QUOT,    LCTL(KC_LSFT),  CTL_T(KC_BSPC),  ALT_T(KC_ENT), //TG(SWCH),
                                               GUI_T(KC_APP),  KC_LGUI,
                                                               KC_HOME,
-                                KC_LSFT, CTL_T(KC_BSPC),KC_END,
+                                M(THUMB_SHIFT_BS), CTL_T(KC_BSPC),KC_END,
+                                //SFT_T(KC_BSPC), CTL_T(KC_BSPC),KC_END,
         // right hand
              TO(PLVR),     KC_6,             KC_7,      KC_8,          KC_9,    KC_0,          KC_MINS,
              TO(MDIA),     KC_Y,             KC_U,      KC_I,          KC_O,    KC_P,          GUI_T(KC_BSLS),
                  LT(SYMB, KC_H),             KC_J,      LT(SYMB, KC_K),          KC_L,    LT(MDIA, KC_SCLN),  LT(FUNX, KC_QUOT),
-         LT(LEAN, KC_DELT),  LT(NENT,KC_N),   KC_M,        KC_COMM,       KC_DOT,  KC_SLSH,   M(SYMBMOD),//KC_RSFT,
-                          ALT_T(KC_ENT), MT(MOD_LCTL | MOD_LALT, KC_LEFT), MT(MOD_LCTL | MOD_LSFT, KC_DOWN),   KC_UP,  KC_RIGHT,
+         LT(LEAN, KC_DELT),  LT(NENT,KC_N),   KC_M,        KC_COMM,       KC_DOT,  KC_SLSH,   KC_RSFT,
+                          ALT_T(KC_SPC), CTL_T(KC_LEFT), MT(MOD_LCTL | MOD_LSFT, KC_DOWN),   KC_UP,  KC_RIGHT,
              KC_LALT,        GUI_T(KC_ESC),
              KC_PGUP,
-             KC_PGDN,           CTL_T(KC_TAB), KC_RSFT
+             KC_PGDN,           CTL_T(KC_TAB), M(THUMB_SHIFT_TAB)
+             //KC_PGDN,           CTL_T(KC_TAB), SFT_T(KC_TAB)
     ),
 
 [CPLK] = KEYMAP(  // layer 0 : default
@@ -275,7 +279,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
           EPRM,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
                                        KC_TRNS,KC_TRNS,
                                                KC_TRNS,
-                               KC_TRNS,KC_TRNS,KC_TRNS,
+                               M(THUMB_SHIFT_BS),KC_TRNS,KC_TRNS,
        // right hand
        KC_TRNS, KC_TRNS,   KC_TRNS,  KC_TRNS,   KC_TRNS,   KC_TRNS,  KC_TRNS,
        KC_TRNS, KC_TRNS,   KC_TRNS,  KC_TRNS,    KC_TRNS,    KC_TRNS, KC_TRNS,
@@ -284,7 +288,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                            KC_TRNS,  KC_TRNS,  KC_TRNS,    KC_TRNS,  KC_TRNS,
        KC_TRNS, KC_TRNS,
        KC_TRNS,
-       KC_TRNS, KC_TRNS, KC_TRNS
+       KC_TRNS, KC_TRNS, M(THUMB_SHIFT_TAB)
 ),
 
 
@@ -494,6 +498,105 @@ void onmouseup(int8_t id){
     mousekeyisdown -= 1;
 }    
 
+/*    if (keycode == KC_Y) {
+        if (record->event.pressed) {
+            if (xpressed) {
+                register_code (KC_RSFT);
+                register_code (KC_X); unregister_code (KC_X);
+                register_code (KC_Y); unregister_code (KC_Y);
+                register_code (KC_Z); unregister_code (KC_Z);
+                unregister_code (KC_RSFT);
+                xwillsend = false;
+                return false;
+            } else {
+                return true;
+                register_code (KC_RSFT);
+                register_code (KC_B); unregister_code (KC_B);
+                register_code (KC_A); unregister_code (KC_A);
+                register_code (KC_N); unregister_code (KC_N);
+                register_code (KC_G); unregister_code (KC_G);
+                unregister_code (KC_RSFT);
+                xwillsend = true;
+            }
+        }
+    }
+    */
+
+uint8_t xpressed = false;
+uint8_t xwillsend = true;
+static uint16_t x_timer = -1;
+
+uint8_t bs_pressed = false;
+uint8_t bs_willsend = true;
+static uint16_t bs_timer = -1;
+
+uint8_t tab_pressed = false;
+uint8_t tab_willsend = true;
+static uint16_t tab_timer = -1;
+
+uint8_t reset_bs_tab_ok = 1;
+//
+//proof of concept complete, but this really needs to be in macros for 
+//backspace and tab keys, with only the last bit of the conditional in this
+//section for disabling the tapped key and resetting the timer
+//Tomorrow, we'll giterdone
+bool process_record_user (uint16_t keycode, keyrecord_t *record) {
+    //return true means process as normal, return false means
+    //fuguedaboudit
+    
+    
+    //ideal way to handle this is a shift count. Increment the shift count when either
+    //thumb shift is pushed, decrement it when either thumb is released. Then only
+    //release shift on keyup if shift count is zero.
+    if (record->event.pressed) {
+        if (reset_bs_tab_ok) {
+            tab_timer = -1;
+            bs_timer = -1;
+            tab_willsend = false;
+            bs_willsend = false;
+        }
+    }
+    return true;
+}
+bool process_record_user2 (uint16_t keycode, keyrecord_t *record) {
+    //return true means process as normal, return false means
+    //fuguedaboudit
+    
+    
+    //ideal way to handle this is a shift count. Increment the shift count when either
+    //thumb shift is pushed, decrement it when either thumb is released. Then only
+    //release shift on keyup if shift count is zero.
+    if (keycode == KC_X) {
+        if (record->event.pressed) {
+            xpressed = true;
+            if (x_timer != -1 && timer_elapsed(x_timer) < 150) {
+                register_code (KC_X);
+                xwillsend = false;
+            } else {
+                register_code (KC_RSFT);
+            }
+            xwillsend = true;
+        } else {
+            // this should be conditional on both shift keys being up, decrement before this line
+            // easier solution: other key doubles as KC_LSFT
+            unregister_code (KC_RSFT);
+            xpressed = false;
+            if (xwillsend) {
+                register_code (KC_X);
+                unregister_code (KC_X);
+                x_timer = timer_read();
+            }
+            unregister_code (KC_X);
+        }
+        return false; //all sending of the key only done by this section of code
+    } else {
+        if (record->event.pressed) {
+            x_timer = -1;
+            xwillsend = false;
+        }
+    }
+    return true;
+}
 
 const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
 {
@@ -509,6 +612,53 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
           eeconfig_init();
         }
         break;
+        case THUMB_SHIFT_BS:
+            if (record->event.pressed) {
+                bs_pressed = true;
+                if (bs_timer != -1 && timer_elapsed(bs_timer) < 150) {
+                    reset_bs_tab_ok = 0;
+                    //register_code (KC_BSPC);
+                    register_code (KC_X);
+                    bs_willsend = false;
+                } else {
+                    register_code (KC_LSFT);
+                }
+                bs_willsend = true;
+            } else {
+                // easier solution: other key doubles as KC_LSFT
+                unregister_code (KC_LSFT);
+                bs_pressed = false;
+                if (bs_willsend) {
+                    register_code (KC_BSPC);
+                    unregister_code (KC_BSPC);
+                    bs_timer = timer_read();
+                }
+                unregister_code (KC_BSPC);
+                reset_bs_tab_ok = 1;
+            }
+            break;
+        case THUMB_SHIFT_TAB:
+            if (record->event.pressed) {
+                tab_pressed = true;
+                if (tab_timer != -1 && timer_elapsed(tab_timer) < 150) {
+                    register_code (KC_TAB);
+                    tab_willsend = false;
+                } else {
+                    register_code (KC_RSFT);
+                }
+                tab_willsend = true;
+            } else {
+                // easier solution: other key doubles as KC_LSFT
+                unregister_code (KC_RSFT);
+                tab_pressed = false;
+                if (tab_willsend) {
+                    register_code (KC_TAB);
+                    unregister_code (KC_TAB);
+                    tab_timer = timer_read();
+                }
+                unregister_code (KC_TAB);
+            }
+            break;
         case OUTEST:
             if (record->event.pressed) {
                 char* stringstore = malloc(32*sizeof(char));
@@ -647,17 +797,17 @@ void matrix_scan_user(void) {
             ergodox_right_led_3_on();
             break;
         case MDIA:
-            if (acc_chord != 0) {
-                if (acc_chord & 1) ergodox_right_led_1_on();
-                if (acc_chord & 2) ergodox_right_led_2_on();
-                if (acc_chord & 4) ergodox_right_led_3_on();
-            } else if (mousespeedplus == 0){
+            //if (acc_chord != 0) {
+            //    if (acc_chord & 1) ergodox_right_led_1_on();
+            //    if (acc_chord & 2) ergodox_right_led_2_on();
+            //    if (acc_chord & 4) ergodox_right_led_3_on();
+            //} else if (mousespeedplus == 0){
                 ergodox_right_led_2_on();
                 ergodox_right_led_3_on();
-            } else {
-                ergodox_right_led_1_on();
-                ergodox_right_led_3_on();
-            }
+            //} else {
+            //    ergodox_right_led_1_on();
+            //    ergodox_right_led_3_on();
+            //}
             break;
         case PLVR:
             ergodox_right_led_1_on();
