@@ -1,6 +1,10 @@
 #include "ergodox.h"
 #include "debug.h"
 #include "action_layer.h"
+
+#include "sendchar.h"
+#include "virtser.h"
+
 #include "version.h"
 #include "mousekey.h"
 #include "keycode.h"
@@ -10,14 +14,15 @@
 #define CPLK 1
 #define NENT 2  // symbols
 #define PLVR 4 // plover layer
-#define MDIA 5 // media keys
-#define NUMP 6 // directional keypad
-#define DRNL 7 // directional keypad
-#define LEAN 8 // keys you can lean on
-#define SYMB 9 // keys you can lean on
-#define FUNX 10//
-#define SWCH 11 // switch board, might not work the way I hope
-#define VIMK 12  // vim normal mode partial emulation
+#define TXBOLT 5
+#define MDIA 6  // media keys
+#define NUMP 7 // directional keypad
+#define DRNL 8 // directional keypad
+#define LEAN 9 // keys you can lean on
+#define SYMB 10// keys you can lean on
+#define FUNX 11//
+#define SWCH 12 // switch board, might not work the way I hope
+#define VIMK 13  // vim normal mode partial emulation
 
 
 #define MSPD1 9
@@ -26,7 +31,7 @@
 #define MSPD4 13 // no binary stuff here
 #define MSSLW 14 // no binary stuff here
 #define MSJS1 15 // no binary stuff here
-#define MSAC0 16 // no binary stuff here
+#define MSAC0 17 // no binary stuff here
 #define MSPDp 58
 #define ROLLBACK 99
 
@@ -36,6 +41,37 @@
 #define THUMB_SHIFT_BS 63
 
 #define EPRM M(1) // Macro 1: Reset EEPROM
+
+// TxBolt Codes
+#define Sl 0b00000001
+#define Tl 0b00000010
+#define Kl 0b00000100
+#define Pl 0b00001000
+#define Wl 0b00010000
+#define Hl 0b00100000
+#define Rl 0b01000001
+#define Al 0b01000010
+#define Ol 0b01000100
+#define X  0b01001000
+#define Er 0b01010000
+#define Ur 0b01100000
+#define Fr 0b10000001
+#define Rr 0b10000010
+#define Pr 0b10000100
+#define Br 0b10001000
+#define Lr 0b10010000
+#define Gr 0b10100000
+#define Tr 0b11000001
+#define Sr 0b11000010
+#define Dr 0b11000100
+#define Zr 0b11001000
+#define NM 0b11010000
+#define GRPMASK 0b11000000
+#define GRP0 0b00000000
+#define GRP1 0b01000000
+#define GRP2 0b10000000
+#define GRP3 0b11000000
+//
 
 //
 //SEND_STRING
@@ -84,7 +120,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                                 M(THUMB_SHIFT_BS), CTL_T(KC_BSPC),KC_END,
                                 //SFT_T(KC_BSPC), CTL_T(KC_BSPC),KC_END,
         // right hand
-             TO(PLVR),     KC_6,             KC_7,      KC_8,          KC_9,    KC_0,          KC_MINS,
+             TG(TXBOLT),     KC_6,             KC_7,      KC_8,          KC_9,    KC_0,          KC_MINS,
              TO(MDIA),     KC_Y,             KC_U,      KC_I,          KC_O,    KC_P,          GUI_T(KC_BSLS),
                  LT(SYMB, KC_H),             KC_J,      LT(SYMB, KC_K),          KC_L,    LT(MDIA, KC_SCLN),  LT(FUNX, KC_QUOT),
          LT(LEAN, KC_DELT),  LT(NENT,KC_N),   KC_M,        KC_COMM,       KC_DOT,  KC_SLSH,   KC_RSFT,
@@ -183,6 +219,43 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_NO,  KC_N,   KC_M
 ),
 
+// TxBolt over Serial
+[TXBOLT] = KEYMAP(
+//       KC_BSPC, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
+//       TG(MDIA),M(NM),   M(NM),   M(NM),   M(NM),   M(NM),  KC_NO,  
+//       TO(BASE),M(Sl),   M(Tl),   M(Pl),   M(Hl),   M(X),
+//       KC_NO,   M(Sl),   M(Kl),   M(Wl),   M(Rl),   M(X),   KC_NO,
+//       KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,
+//                                           KC_NO,   KC_NO,  
+//                                                    KC_NO,  
+//                                  M(Al),   M(Ol),   KC_NO,  
+//    // right hand
+//       KC_NO,    KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
+//       KC_TRNS,  M(NM),   M(NM),   M(NM),   M(NM),   M(NM),   M(NM),
+//                 M(X),    M(Fr),   M(Pr),   M(Lr),   M(Tr),   M(Dr),
+//       KC_NO,    M(X),    M(Rr),   M(Br),   M(Gr),   M(Sr),   M(Zr),
+//                          KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
+//       KC_NO,   KC_NO,  
+//       KC_NO,  
+//       KC_NO,   M(Er),   M(Ur)
+       KC_BSPC, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
+       KC_NO,   M(NM),   M(NM),   M(NM),   M(NM),   M(NM),  M(X),  
+       KC_NO,   KC_NO,   M(Sl),   M(Tl),   M(Pl),   M(Hl),
+       KC_NO,   KC_NO,   M(Sl),   M(Kl),   M(Wl),   M(Rl),   M(X),
+       KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,
+                                           KC_NO,   KC_NO,  
+                                                    KC_NO,  
+                                  M(Al),   M(Ol),   KC_NO,  
+    // right hand
+       KC_TRNS,    KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
+       M(X),  M(NM),   M(NM),   M(NM),   M(NM),   M(NM),   M(NM),
+                M(Fr),   M(Pr),   M(Lr),   M(Tr),   M(Dr), KC_NO,
+       M(X),    M(Rr),   M(Br),   M(Gr),   M(Sr),   M(Zr), KC_NO,
+                          KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
+       KC_NO,   KC_NO,  
+       KC_NO,  
+       KC_NO,   M(Er),   M(Ur)
+),
 
 // MEDIA AND MOUSE
 [MDIA] = KEYMAP(  
@@ -384,6 +457,7 @@ const uint16_t PROGMEM fn_actions[] = {
     [1] = ACTION_LAYER_TAP_TOGGLE(SYMB)                // FN1 - Momentary Layer 1 (Symbols)
 };
 
+#ifdef MOUSEKEY_ENABLE
 void mouseaccel_off(){
     mousekey_off(KC_MS_ACCEL0);
     mousekey_off(KC_MS_ACCEL1);
@@ -498,6 +572,8 @@ void onmouseup(int8_t id){
     mousekeyisdown -= 1;
 }    
 
+#endif //end mouse conditional block
+
 /*    if (keycode == KC_Y) {
         if (record->event.pressed) {
             if (xpressed) {
@@ -540,6 +616,22 @@ uint8_t reset_bs_tab_ok = 1;
 //backspace and tab keys, with only the last bit of the conditional in this
 //section for disabling the tapped key and resetting the timer
 //Tomorrow, we'll giterdone
+
+//  TXBOLT copy paste starts here {
+uint8_t chord[4] = {0,0,0,0};
+uint8_t pressed_count = 0;
+
+void send_chord(void)
+{
+  for(uint8_t i = 0; i < 4; i++)
+  {
+    if(chord[i])
+      virtser_send(chord[i]);
+  }
+  virtser_send(0);
+}
+// }
+
 bool process_record_user (uint16_t keycode, keyrecord_t *record) {
     //return true means process as normal, return false means
     //fuguedaboudit
@@ -549,12 +641,15 @@ bool process_record_user (uint16_t keycode, keyrecord_t *record) {
     //thumb shift is pushed, decrement it when either thumb is released. Then only
     //release shift on keyup if shift count is zero.
     if (record->event.pressed) {
+        pressed_count++; //         TXBOLT line
         if (reset_bs_tab_ok) {
             tab_timer = -1;
             bs_timer = -1;
             tab_willsend = false;
             bs_willsend = false;
         }
+    } else {
+        pressed_count--; //         TXBOLT line
     }
     return true;
 }
@@ -601,6 +696,22 @@ bool process_record_user2 (uint16_t keycode, keyrecord_t *record) {
 const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
 {
   // MACRODOWN only works in this function
+
+      uint8_t layer = biton32(layer_state);
+      if (layer==TXBOLT){
+          if (record->event.pressed) {
+            uint8_t grp = (id & GRPMASK) >> 6;
+            chord[grp] |= id;
+          }
+          else {
+            if (pressed_count == 0) {
+              send_chord();
+              chord[0] = chord[1] = chord[2] = chord[3] = 0;
+            }
+          }
+          return MACRO_NONE;
+      }
+
       switch(id) {
         case 0:
         if (record->event.pressed) {
@@ -680,6 +791,7 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
             }
             break;
 
+#ifdef MOUSEKEY_ENABLE
         case MSJS1:
             if (record->event.pressed) {
                 mousekey_on(KC_MS_ACCEL_JUST1);
@@ -754,6 +866,7 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
             }
             //need to do something so speed updates here too
         }
+#endif
         break;
       }
     return MACRO_NONE;
@@ -780,7 +893,7 @@ void matrix_scan_user(void) {
 
     switch (layer) {
       // TODO: Make this relevant to the ErgoDox EZ.
-        case LEAN:
+        case BASE:
             ergodox_right_led_1_on();
             break;
         case CPLK :
@@ -847,3 +960,6 @@ void matrix_scan_user(void) {
 // tODO w momentary directional pad mode, a momentary NENT mode, s needs its own numpad, NENT directional pad needs shifted left
 // DONE
 // TODO double tap for  control on shift keys.
+//
+//
+
