@@ -122,7 +122,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
       LT(FUNX, KC_TAB),  KC_Q,        LT(NUMP,KC_W),         KC_E,   KC_R,       KC_T,           TO(NENT),
         TO(BASE), LT(NENT,KC_A),      LT(NUMP,KC_S), KC_D,   LT(FUNX,KC_F),      LT(FUNX,KC_G),
         KC_LSFT,         KC_Z,        KC_X,         KC_C,    LT(DRNL,KC_V),      LT(MDIA,KC_B),  LT(LEAN, KC_TAB),
-        LT(NUMP,KC_GRV),KC_QUOT,    LCTL(KC_LSFT),  CTL_T(KC_BSPC),  ALT_T(KC_ENT), //TG(SWCH), GUI_T(KC_APP),  KC_LGUI, KC_HOME,
+        LT(NUMP,KC_GRV),KC_QUOT,    LCTL(KC_LSFT),  CTL_T(KC_BSPC),  ALT_T(KC_ENT), //TG(SWCH),
+                                GUI_T(KC_APP),  KC_LGUI, KC_HOME,
                                 M(THUMB_SHIFT_BS), CTL_T(KC_BSPC),KC_END,
                                 //SFT_T(KC_BSPC), CTL_T(KC_BSPC),KC_END,
         // right hand
