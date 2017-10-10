@@ -6,9 +6,14 @@
 #include "virtser.h"
 
 #include "version.h"
+
+#ifdef MOUSEKEY_ENABLE
 #include "mousekey.h"
+#endif
+
 #include "keycode.h"
 #include "timer.h"
+
 
 #define BASE 0 // default layer
 #define CPLK 1
@@ -19,10 +24,8 @@
 #define NUMP 7 // directional keypad
 #define DRNL 8 // directional keypad
 #define LEAN 9 // keys you can lean on
-#define SYMB 10// keys you can lean on
+#define SYMB 10//
 #define FUNX 11//
-#define SWCH 12 // switch board, might not work the way I hope
-#define VIMK 13  // vim normal mode partial emulation
 
 
 #define MSPD1 9
@@ -42,6 +45,7 @@
 
 #define EPRM M(1) // Macro 1: Reset EEPROM
 
+
 // TxBolt Codes
 #define Sl 0b00000001
 #define Tl 0b00000010
@@ -49,40 +53,44 @@
 #define Pl 0b00001000
 #define Wl 0b00010000
 #define Hl 0b00100000
+
 #define Rl 0b01000001
 #define Al 0b01000010
 #define Ol 0b01000100
 #define X  0b01001000
 #define Er 0b01010000
 #define Ur 0b01100000
+
 #define Fr 0b10000001
 #define Rr 0b10000010
 #define Pr 0b10000100
 #define Br 0b10001000
 #define Lr 0b10010000
 #define Gr 0b10100000
+
 #define Tr 0b11000001
 #define Sr 0b11000010
 #define Dr 0b11000100
 #define Zr 0b11001000
 #define NM 0b11010000
+
 #define GRPMASK 0b11000000
 #define GRP0 0b00000000
 #define GRP1 0b01000000
 #define GRP2 0b10000000
 #define GRP3 0b11000000
-//
 
-//
-//SEND_STRING
+
+#ifdef MOUSEKEY_ENABLE
 uint8_t mousespeed = KC_MS_ACCEL2 ;
 uint8_t mousespeedplus=0;
-//uint8_t reaccelerations=0;
 uint8_t acc_chord=0;
 uint8_t trans_chord=0;
 uint8_t mousekeys_down_c = 0;
 uint16_t mdir1=0;
 uint16_t mdir2=0;
+#endif
+
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 /* Keymap 0: Basic layer
@@ -110,13 +118,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // Otherwise, it needs KC_*
 [BASE] = KEYMAP(  // layer 0 : default
         // left hand
-        KC_EQL,          KC_1,        KC_2,          KC_3,   KC_4,                    KC_5,   KC_LEFT,
-      LT(FUNX, KC_TAB),  KC_Q,        LT(NUMP,KC_W),          KC_E,   KC_R,                    KC_T,   TO(NENT),
-        TO(BASE), LT(NENT,KC_A),LT(NUMP,KC_S),LT(SWCH,KC_D),   LT(FUNX,KC_F), LT(FUNX,KC_G),
-        KC_LSFT,         KC_Z,         KC_X,          KC_C,   LT(DRNL,KC_V),              LT(MDIA,KC_B),    LT(LEAN, KC_TAB),
-        LT(NUMP,KC_GRV),KC_QUOT,    LCTL(KC_LSFT),  CTL_T(KC_BSPC),  ALT_T(KC_ENT), //TG(SWCH),
-                                              GUI_T(KC_APP),  KC_LGUI,
-                                                              KC_HOME,
+        KC_EQL,          KC_1,        KC_2,          KC_3,   KC_4,               KC_5,           KC_LEFT,
+      LT(FUNX, KC_TAB),  KC_Q,        LT(NUMP,KC_W),         KC_E,   KC_R,       KC_T,           TO(NENT),
+        TO(BASE), LT(NENT,KC_A),      LT(NUMP,KC_S), KC_D,   LT(FUNX,KC_F),      LT(FUNX,KC_G),
+        KC_LSFT,         KC_Z,        KC_X,         KC_C,    LT(DRNL,KC_V),      LT(MDIA,KC_B),  LT(LEAN, KC_TAB),
+        LT(NUMP,KC_GRV),KC_QUOT,    LCTL(KC_LSFT),  CTL_T(KC_BSPC),  ALT_T(KC_ENT), //TG(SWCH), GUI_T(KC_APP),  KC_LGUI, KC_HOME,
                                 M(THUMB_SHIFT_BS), CTL_T(KC_BSPC),KC_END,
                                 //SFT_T(KC_BSPC), CTL_T(KC_BSPC),KC_END,
         // right hand
@@ -137,7 +143,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_DELT,        S(KC_Q),         S(KC_W),         S(KC_E),   S(KC_R),   S(KC_T),   KC_TRNS,
         TO(BASE),       S(KC_A),         S(KC_S),         S(KC_D),   S(KC_F),   S(KC_G),
         KC_LSFT,        S(KC_Z),         S(KC_X),         S(KC_C),   S(KC_V),   S(KC_B),   KC_TRNS,
-        LT(NENT,KC_GRV),KC_QUOT,    LCTL(KC_LSFT),  MT(MOD_LCTL | MOD_LALT, KC_LEFT),  ALT_T(KC_RGHT), //TG(SWCH),
+        LT(NENT,KC_GRV),KC_QUOT,    LCTL(KC_LSFT),  MT(MOD_LCTL | MOD_LALT, KC_LEFT),  ALT_T(KC_RGHT),
                                               ALT_T(KC_APP),  KC_LGUI,
                                                               KC_HOME,
                                                KC_SPC,KC_BSPC,KC_END,
@@ -386,50 +392,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TRNS,  KC_LCTL,   SFT_T(KC_TAB)
 ),
 
-[SWCH] = KEYMAP(  // Convenience gateway to other semipermanent modes.
-        //         Not so sure FUNX needs to be here, maybe not DRNL either..
-        // left hand
-        KC_NO,       KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,
-        KC_NO,       KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_TRNS,
-        TO(BASE),    KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,
-        KC_NO,       KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,
-        KC_NO,       KC_NO,      KC_NO,      KC_NO,      KC_NO,     
-                                      KC_NO, KC_NO,
-                                           KC_NO,
-                                 KC_NO,   KC_NO,   KC_NO,
-        // right hand
-             KC_TRNS,       KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_TRNS,
-             KC_TRNS,       KC_NO,      KC_NO,      TO(BASE),      KC_NO,      KC_NO,      KC_TRNS,
-                            KC_NO,      TO(MDIA),   TO(FUNX),   TO(CPLK),   KC_NO,      KC_NO,
-               TO(PLVR),    TO(NENT),   TO(DRNL),      KC_NO,      KC_NO,      KC_NO,      KC_NO,
-                                        KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,
-        KC_NO, KC_NO,
-        KC_NO,
-        KC_NO,  KC_NO,   KC_NO
-),
-
-
-[VIMK] = KEYMAP(  // Blank template keymap
-        // left hand
-        KC_NO,       KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,
-        KC_NO,       KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_TRNS,
-        KC_NO,       KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,
-        KC_NO,       KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,
-        KC_NO,       KC_NO,      KC_NO,      KC_NO,      KC_NO,     
-                                      KC_NO, KC_NO,
-                                           KC_NO,
-                                 KC_C,   KC_V,   KC_NO,
-        // right hand
-             KC_TRNS,       KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_TRNS,
-             KC_TRNS,       KC_NO,      KC_NO,      TO(0),      KC_NO,      KC_NO,      KC_TRNS,
-                            KC_LEFT,    KC_DOWN,    KC_UP,      KC_RGHT,      KC_NO,      KC_NO,
-               KC_NO,       KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,
-                            KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,
-        KC_NO, KC_NO,
-        KC_NO,
-        KC_NO,  KC_NO,   KC_NO
-),
-
 /*[BLNK] = KEYMAP(  // Blank template keymap
         // left hand
         KC_NO,       KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,      KC_NO,
@@ -574,33 +536,6 @@ void onmouseup(int8_t id){
 
 #endif //end mouse conditional block
 
-/*    if (keycode == KC_Y) {
-        if (record->event.pressed) {
-            if (xpressed) {
-                register_code (KC_RSFT);
-                register_code (KC_X); unregister_code (KC_X);
-                register_code (KC_Y); unregister_code (KC_Y);
-                register_code (KC_Z); unregister_code (KC_Z);
-                unregister_code (KC_RSFT);
-                xwillsend = false;
-                return false;
-            } else {
-                return true;
-                register_code (KC_RSFT);
-                register_code (KC_B); unregister_code (KC_B);
-                register_code (KC_A); unregister_code (KC_A);
-                register_code (KC_N); unregister_code (KC_N);
-                register_code (KC_G); unregister_code (KC_G);
-                unregister_code (KC_RSFT);
-                xwillsend = true;
-            }
-        }
-    }
-    */
-
-uint8_t xpressed = false;
-uint8_t xwillsend = true;
-static uint16_t x_timer = -1;
 
 uint8_t bs_pressed = false;
 uint8_t bs_willsend = true;
@@ -611,11 +546,6 @@ uint8_t tab_willsend = true;
 static uint16_t tab_timer = -1;
 
 uint8_t reset_bs_tab_ok = 1;
-//
-//proof of concept complete, but this really needs to be in macros for 
-//backspace and tab keys, with only the last bit of the conditional in this
-//section for disabling the tapped key and resetting the timer
-//Tomorrow, we'll giterdone
 
 //  TXBOLT copy paste starts here {
 uint8_t chord[4] = {0,0,0,0};
@@ -633,13 +563,6 @@ void send_chord(void)
 // }
 
 bool process_record_user (uint16_t keycode, keyrecord_t *record) {
-    //return true means process as normal, return false means
-    //fuguedaboudit
-    
-    
-    //ideal way to handle this is a shift count. Increment the shift count when either
-    //thumb shift is pushed, decrement it when either thumb is released. Then only
-    //release shift on keyup if shift count is zero.
     if (record->event.pressed) {
         pressed_count++; //         TXBOLT line
         if (reset_bs_tab_ok) {
@@ -650,45 +573,6 @@ bool process_record_user (uint16_t keycode, keyrecord_t *record) {
         }
     } else {
         pressed_count--; //         TXBOLT line
-    }
-    return true;
-}
-bool process_record_user2 (uint16_t keycode, keyrecord_t *record) {
-    //return true means process as normal, return false means
-    //fuguedaboudit
-    
-    
-    //ideal way to handle this is a shift count. Increment the shift count when either
-    //thumb shift is pushed, decrement it when either thumb is released. Then only
-    //release shift on keyup if shift count is zero.
-    if (keycode == KC_X) {
-        if (record->event.pressed) {
-            xpressed = true;
-            if (x_timer != -1 && timer_elapsed(x_timer) < 150) {
-                register_code (KC_X);
-                xwillsend = false;
-            } else {
-                register_code (KC_RSFT);
-            }
-            xwillsend = true;
-        } else {
-            // this should be conditional on both shift keys being up, decrement before this line
-            // easier solution: other key doubles as KC_LSFT
-            unregister_code (KC_RSFT);
-            xpressed = false;
-            if (xwillsend) {
-                register_code (KC_X);
-                unregister_code (KC_X);
-                x_timer = timer_read();
-            }
-            unregister_code (KC_X);
-        }
-        return false; //all sending of the key only done by this section of code
-    } else {
-        if (record->event.pressed) {
-            x_timer = -1;
-            xwillsend = false;
-        }
     }
     return true;
 }
@@ -930,11 +814,6 @@ void matrix_scan_user(void) {
             ergodox_right_led_1_on();
             ergodox_right_led_2_on();
             break;
-        case SWCH:
-            ergodox_right_led_1_on();
-            ergodox_right_led_2_on();
-            ergodox_right_led_3_on();
-            break;
         case NUMP:
             ergodox_right_led_1_on();
             ergodox_right_led_2_on();
@@ -945,21 +824,3 @@ void matrix_scan_user(void) {
             break;
     }
 };
-
-// TODO make transparent keys in capslock, add layer shifters to sdf
-// make a separate momentary number layer for repositioning some punctuation.
-// Not sure if want to move s mods or just include w and a in momentary layer shift status
-// Write a function to add shift keys to symbol layer once momentary keys held long enoug:and make it operate on
-// unshifted characters instead because it currently has too much lag to be useable.
-//
-// KJ, extra escape key in SYMB layer, MDIA tabs and stabs, b3 to leftarrow transparent bottom row
-// double timetomax for mousewheel. move audio to top row because I never use numbers there anyway
-// Changing speed categories. saving momentary JUST1 for later and other purposes. Writing macro MSJS1
-// Purging old mouse directional macros.
-// TODos for an even slower mousekey mode than just1
-// tODO w momentary directional pad mode, a momentary NENT mode, s needs its own numpad, NENT directional pad needs shifted left
-// DONE
-// TODO double tap for  control on shift keys.
-//
-//
-
