@@ -47,6 +47,7 @@
 
 
 // TxBolt Codes
+
 #define Sl 0b00000001
 #define Tl 0b00000010
 #define Kl 0b00000100
@@ -57,7 +58,7 @@
 #define Rl 0b01000001
 #define Al 0b01000010
 #define Ol 0b01000100
-#define X  0b01001000
+#define X 0b01001000
 #define Er 0b01010000
 #define Ur 0b01100000
 
@@ -79,6 +80,20 @@
 #define GRP1 0b01000000
 #define GRP2 0b10000000
 #define GRP3 0b11000000
+
+//Split asterisk and 8 number bar key tracking constants
+#define GRPX 0b11100000
+#define Xr 0b11101001 //This code not actually for sending on serial,
+                      //assuming I've made my life easier here though.
+#define N0 0b11100000
+#define N1 0b11100001
+#define N2 0b11100010
+#define N3 0b11100011
+#define N4 0b11100100
+#define N5 0b11100101
+#define N6 0b11100110
+#define N7 0b11100111
+#define Zl 0b11101000  //For split left S tracking
 
 
 #ifdef MOUSEKEY_ENABLE
@@ -228,26 +243,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 // TxBolt over Serial
 [TXBOLT] = KEYMAP(
-//       KC_BSPC, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
-//       TG(MDIA),M(NM),   M(NM),   M(NM),   M(NM),   M(NM),  KC_NO,  
-//       TO(BASE),M(Sl),   M(Tl),   M(Pl),   M(Hl),   M(X),
-//       KC_NO,   M(Sl),   M(Kl),   M(Wl),   M(Rl),   M(X),   KC_NO,
-//       KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,
-//                                           KC_NO,   KC_NO,  
-//                                                    KC_NO,  
-//                                  M(Al),   M(Ol),   KC_NO,  
-//    // right hand
-//       KC_NO,    KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
-//       KC_TRNS,  M(NM),   M(NM),   M(NM),   M(NM),   M(NM),   M(NM),
-//                 M(X),    M(Fr),   M(Pr),   M(Lr),   M(Tr),   M(Dr),
-//       KC_NO,    M(X),    M(Rr),   M(Br),   M(Gr),   M(Sr),   M(Zr),
-//                          KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
-//       KC_NO,   KC_NO,  
-//       KC_NO,  
-//       KC_NO,   M(Er),   M(Ur)
        KC_BSPC, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
-       KC_NO,   M(NM),   M(NM),   M(NM),   M(NM),   M(NM),  M(X),  
-       KC_NO,   KC_NO,   M(Sl),   M(Tl),   M(Pl),   M(Hl),
+       KC_NO,   M(NM),   M(N0),   M(N1),   M(N2),   M(N3),  M(X),  
+       KC_NO,   KC_NO,   M(Zl),   M(Tl),   M(Pl),   M(Hl),
        KC_NO,   KC_NO,   M(Sl),   M(Kl),   M(Wl),   M(Rl),   M(X),
        KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,
                                            KC_NO,   KC_NO,  
@@ -255,9 +253,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                                   M(Al),   M(Ol),   KC_NO,  
     // right hand
        KC_TRNS,    KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
-       M(X),  M(NM),   M(NM),   M(NM),   M(NM),   M(NM),   M(NM),
+       M(Xr),  M(N4),   M(N5),   M(N6),   M(N7),   M(NM),   M(NM),
                 M(Fr),   M(Pr),   M(Lr),   M(Tr),   M(Dr), KC_NO,
-       M(X),    M(Rr),   M(Br),   M(Gr),   M(Sr),   M(Zr), KC_NO,
+       M(Xr),    M(Rr),   M(Br),   M(Gr),   M(Sr),   M(Zr), KC_NO,
                           KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
        KC_NO,   KC_NO,  
        KC_NO,  
@@ -582,11 +580,24 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
 {
   // MACRODOWN only works in this function
 
+      uint8_t boltstenokey;
       uint8_t layer = biton32(layer_state);
       if (layer==TXBOLT){
+          if (id >= GRPX) {
+              if (id == Xr) {
+                  boltstenokey = X;
+              } else if (id == Zl) {
+                  boltstenokey = Sl;
+              } else if (id >= N0 && id <= N7) {
+                  boltstenokey = NM;
+              }
+          } else {
+              boltstenokey = id;
+          }
+
           if (record->event.pressed) {
-            uint8_t grp = (id & GRPMASK) >> 6;
-            chord[grp] |= id;
+            uint8_t grp = (boltstenokey & GRPMASK) >> 6;
+            chord[grp] |= boltstenokey;
           }
           else {
             if (pressed_count == 0) {
