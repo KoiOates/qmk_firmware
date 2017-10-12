@@ -690,19 +690,24 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
                     newkey = (BOLTMASK & id) << ((6 * grp)+1);
                     //lchord = lchord | newkey; 
                     lchord = lchord | bin_mirror(newkey, 16); 
-                } else {
+                } else if (id <= Zr) {
                     if (grp == 1) { // still an E or U)
                         newkey = (BOLTMASK & id) << 2; //starts at 4 over, want it 6 over to make room for number and star stuff
                     } else {
                         newkey = (BOLTMASK & id) << 8;
                         if (id >= Tr) newkey = newkey << 6;
-                        if ((id % 2) == 0) {
+                        if (id == Pr || id == Lr) {
+                            newkey = newkey << 1;
+                        } else if ((id % 2) == 0) {
                             newkey = newkey >> 1;
                         } else {
                             newkey = newkey << 1; //not as simple as even odd, go to sleep
                         }
                     }
                     rchord = rchord | newkey; 
+                } else if (id == Zl) {
+                    newkey = 0x80;
+                    lchord = lchord | newkey;
                 }
             } else {
                 // Figure out where to put number and star stuff later,
@@ -726,7 +731,7 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
               debug_chord(lchord);
               debug_chord(rchord);
               translate_and_send(lchord);
-              //QUICK_TAP(KC_ENT);
+              QUICK_TAP(KC_ENT);
               chord[0] = chord[1] = chord[2] = chord[3] = 0;
               lchord = 0;
               rchord = 0;
