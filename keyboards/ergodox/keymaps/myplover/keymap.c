@@ -14,6 +14,8 @@
 #include "keycode.h"
 #include "timer.h"
 
+#include <avr/pgmspace.h>
+#include "stenodictionary.h"
 
 #define BASE 0 // default layer
 #define CPLK 1
@@ -37,6 +39,7 @@
 #define MSAC0 17 // no binary stuff here
 #define MSPDp 58
 #define ROLLBACK 99
+#define DEBUG_DICTIONARY 244 
 
 #define SYMBMOD 60
 #define OUTEST 61
@@ -45,6 +48,10 @@
 
 #define EPRM M(1) // Macro 1: Reset EEPROM
 
+/* ZSTK PWHR AO*# 1234 *
+ * * * * * * * * * * * * 6789 #*UE FRPB LGTS
+ * STGL BPRF UE*# 9876 *
+ */
 
 // TxBolt Codes
 
@@ -58,7 +65,7 @@
 #define Rl 0b01000001
 #define Al 0b01000010
 #define Ol 0b01000100
-#define X 0b01001000
+#define X  0b01001000
 #define Er 0b01010000
 #define Ur 0b01100000
 
@@ -83,17 +90,19 @@
 
 //Split asterisk and 8 number bar key tracking constants
 #define GRPX 0b11100000
-#define Xr 0b11101001 //This code not actually for sending on serial,
-                      //assuming I've made my life easier here though.
-#define N0 0b11100000
-#define N1 0b11100001
-#define N2 0b11100010
-#define N3 0b11100011
-#define N4 0b11100100
-#define N5 0b11100101
-#define N6 0b11100110
-#define N7 0b11100111
-#define Zl 0b11101000  //For split left S tracking
+#define Xr   0b11101000
+                     
+#define N1 0b11100000
+#define N2 0b11100001
+#define N3 0b11100010
+#define N4 0b11100011
+#define N6 0b11110011
+#define N7 0b11110010
+#define N8 0b11110001
+#define N9 0b11110000
+// The numbers shift into one variable, gets ored into either left or right variable
+// Zl and Xr handled on their own with ifs, doesn't matter what the actual value is really.
+#define Zl 0b11111000  //For split left S tracking
 
 
 #ifdef MOUSEKEY_ENABLE
@@ -243,8 +252,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 // TxBolt over Serial
 [TXBOLT] = KEYMAP(
-       KC_BSPC, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
-       KC_NO,   M(NM),   M(N0),   M(N1),   M(N2),   M(N3),  M(X),  
+       M(DEBUG_DICTIONARY), KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
+       KC_NO,   M(NM),   M(N1),   M(N2),   M(N4),   M(N4),  M(X),  
        KC_NO,   KC_NO,   M(Zl),   M(Tl),   M(Pl),   M(Hl),
        KC_NO,   KC_NO,   M(Sl),   M(Kl),   M(Wl),   M(Rl),   M(X),
        KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,
@@ -253,8 +262,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                                   M(Al),   M(Ol),   KC_NO,  
     // right hand
        KC_TRNS,    KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
-       M(Xr),  M(N4),   M(N5),   M(N6),   M(N7),   M(NM),   M(NM),
-                M(Fr),   M(Pr),   M(Lr),   M(Tr),   M(Dr), KC_NO,
+       M(Xr),    M(N6),   M(N7),   M(N8),   M(N9),   M(NM),   M(NM),
+                 M(Fr),   M(Pr),   M(Lr),   M(Tr),   M(Dr), KC_NO,
        M(Xr),    M(Rr),   M(Br),   M(Gr),   M(Sr),   M(Zr), KC_NO,
                           KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
        KC_NO,   KC_NO,  
@@ -548,6 +557,8 @@ uint8_t reset_bs_tab_ok = 1;
 
 //  TXBOLT copy paste starts here {
 uint8_t chord[4] = {0,0,0,0};
+uint16_t lchord = 0;
+uint16_t rchord = 0;
 uint8_t pressed_count = 0;
 
 void send_chord(void)
@@ -560,6 +571,73 @@ void send_chord(void)
   virtser_send(0);
 }
 // }
+
+uint16_t bin_mirror(int n, int bits) {
+    int out = 0;
+    int bit = 0;
+    for (int i = 0; i < bits; i++) {
+        bit = n & 1;
+        n = n >> 1;
+        if (bit == 1) out = out | (1 << (bits - i - 1));
+    }
+    return out;
+}
+
+#define QUICK_TAP(kc) register_code(kc); wait_ms(5); unregister_code(kc)
+#define SHIFT_TAP(kc) register_code(KC_LSFT); register_code(kc); wait_ms(5); unregister_code(kc); unregister_code(KC_LSFT)
+void debug_chord(uint16_t extchord)
+{
+    extchord = bin_mirror(extchord, 16);
+    for(uint8_t i = 0; i < 16; i++)
+    {
+        if ((extchord & 1) == 1) {
+            QUICK_TAP(KC_1);
+        } else {
+            QUICK_TAP(KC_0);
+        }
+        extchord = extchord >> 1;        
+        if (i % 8 == 7) {
+            QUICK_TAP(KC_SPC);
+        } else if (i % 4 == 3) {
+            SHIFT_TAP(KC_MINS);
+        }
+    }
+    QUICK_TAP(KC_ENT);
+}
+
+void debug_translate_and_send(uint16_t chord)
+{
+    uint16_t keycode = pgm_read_word_near(chorddict + chord);
+    if (keycode != 0) {
+       QUICK_TAP(keycode);
+       QUICK_TAP(KC_ENT);
+    } 
+    QUICK_TAP(keycode);
+    debug_chord(keycode);
+    QUICK_TAP(KC_B);
+    debug_chord(KC_B);
+}
+
+void translate_and_send(uint16_t chord)
+{
+    uint16_t keycode = pgm_read_word_near(chorddict + chord);
+    if (keycode != 0) {
+       QUICK_TAP(keycode);
+    } 
+}
+
+void dump_dictionary()
+{
+    uint16_t keycode = 0;
+    for (uint16_t i = 0; i < 496; i++){
+        keycode = pgm_read_word_near(chorddict + i);
+        if (keycode != 0) {
+            QUICK_TAP(keycode);
+        } else {
+            QUICK_TAP(KC_0);
+        }
+    }
+}
 
 bool process_record_user (uint16_t keycode, keyrecord_t *record) {
     if (record->event.pressed) {
@@ -580,29 +658,78 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
 {
   // MACRODOWN only works in this function
 
-      uint8_t boltstenokey;
+      uint8_t boltstenokey = id;
       uint8_t layer = biton32(layer_state);
       if (layer==TXBOLT){
-          if (id >= GRPX) {
-              if (id == Xr) {
-                  boltstenokey = X;
-              } else if (id == Zl) {
-                  boltstenokey = Sl;
-              } else if (id >= N0 && id <= N7) {
-                  boltstenokey = NM;
-              }
-          } else {
-              boltstenokey = id;
-          }
-
           if (record->event.pressed) {
+            if (id == DEBUG_DICTIONARY){
+                  dump_dictionary();
+            }
+            if (id >= GRPX) {
+                if (id == Xr) {
+                    boltstenokey = X;
+                } else if (id == Zl) {
+                    boltstenokey = Sl;
+                } else if (id >= N1 && id <= N9) {
+                    boltstenokey = NM;
+                }
+            }/* else {
+                boltstenokey = id;
+            } // set to id at initialization */
+
             uint8_t grp = (boltstenokey & GRPMASK) >> 6;
             chord[grp] |= boltstenokey;
+            // That covers original bolt functionality,
+            // next add keys to the extended chord.
+            uint16_t newkey;
+#define BOLTMASK 0b00111111
+            if (id < NM) {
+                //extchord |= (0b00111111 & boltstenokey) << (6 * grp);
+                //try one, if it's empty try the other
+                if (id <= X) {
+                    newkey = (BOLTMASK & id) << ((6 * grp)+1);
+                    //lchord = lchord | newkey; 
+                    lchord = lchord | bin_mirror(newkey, 16); 
+                } else {
+                    if (grp == 1) { // still an E or U)
+                        newkey = (BOLTMASK & id) << 2; //starts at 4 over, want it 6 over to make room for number and star stuff
+                    } else {
+                        newkey = (BOLTMASK & id) << 8;
+                        if (id >= Tr) newkey = newkey << 6;
+                        if ((id % 2) == 0) {
+                            newkey = newkey >> 1;
+                        } else {
+                            newkey = newkey << 1; //not as simple as even odd, go to sleep
+                        }
+                    }
+                    rchord = rchord | newkey; 
+                }
+            } else {
+                // Figure out where to put number and star stuff later,
+                //   just make sure that first thing worked first.
+                //uint8_t bit_position = (0b00001111 & id) - 1;
+                //extchord |= 1 << (bit_position + 23);
+            }
+            /*
+            if (id < GRPX || id == N0) { // bit in the uint32_t extchord
+                extchord |= (0b00111111 & boltstenokey) << (6 * grp);
+            } else {
+                uint8_t bit_position = (0b00001111 & id) - 1;
+                extchord |= 1 << (bit_position + 23);
+            }
+            */
           }
           else {
             if (pressed_count == 0) {
               send_chord();
+              //lchord = lchord >> 6;
+              debug_chord(lchord);
+              debug_chord(rchord);
+              translate_and_send(lchord);
+              //QUICK_TAP(KC_ENT);
               chord[0] = chord[1] = chord[2] = chord[3] = 0;
+              lchord = 0;
+              rchord = 0;
             }
           }
           return MACRO_NONE;
