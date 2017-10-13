@@ -559,6 +559,8 @@ uint8_t reset_bs_tab_ok = 1;
 uint8_t chord[4] = {0,0,0,0};
 uint16_t lchord = 0;
 uint16_t rchord = 0;
+uint16_t lcurchord = 0;
+uint16_t rcurchord = 0;
 uint8_t pressed_count = 0;
 
 void send_chord(void)
@@ -656,8 +658,9 @@ bool process_record_user (uint16_t keycode, keyrecord_t *record) {
 
 uint8_t lpressed_count = 0;
 uint8_t rpressed_count = 0;
-#define L_TRACK_COUNT() if (newkey) { if (pressed) lpressed_count++; else lpressed_count--; }
-#define R_TRACK_COUNT() if (newkey) { if (pressed) rpressed_count++; else rpressed_count--; }
+
+#define L_TRACK_COUNT() lchord = lchord | newkey; if (newkey) { if (pressed) lpressed_count++; else lpressed_count--; }
+#define R_TRACK_COUNT() rchord = rchord | newkey; if (newkey) { if (pressed) rpressed_count++; else rpressed_count--; }
 #define BOLTMASK 0b00111111
 
 const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
@@ -691,7 +694,8 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
           if (id < NM) {
               if (id <= X) {
                   newkey = (BOLTMASK & id) << ((6 * grp)+1);
-                  lchord = lchord | bin_mirror(newkey, 16); L_TRACK_COUNT();
+                  newkey = bin_mirror(newkey, 16);
+                  L_TRACK_COUNT();
               } else if (id <= Zr) {
                   if (grp == 1) { // still an E or U)
                       newkey = (BOLTMASK & id) << 2; 
@@ -706,19 +710,19 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
                           newkey = newkey << 1;
                       }
                   }
-                  rchord = rchord | newkey; R_TRACK_COUNT();
+                  R_TRACK_COUNT();
               }
           } else if (id < Zl) { /** Extended keys handling: num bar first **/
                               // this \/ make sure sided num bar indicator is set too
-              newkey = (1 << (0x0F & id)) | 0x10;
-              if ((0xF0 & id) == 0xF0) { rchord = rchord | newkey; R_TRACK_COUNT(); }
-              else           { lchord = lchord | newkey; L_TRACK_COUNT(); }
+              newkey = (1 << (0x0F & id));
+              if ((0xF0 & id) == 0xF0) { R_TRACK_COUNT(); }
+              else                     { L_TRACK_COUNT(); }
           } else if (id == Zl) {
               newkey = 0x8000; /*                           top left S */
-              lchord = lchord | newkey; L_TRACK_COUNT();
+              L_TRACK_COUNT();
           } else if (id == Xr) {
               newkey = 0x20;   /*                              right * */
-              rchord = rchord | newkey; R_TRACK_COUNT();
+              R_TRACK_COUNT();
           }
 
 //uint8_t lpressed_count = 0;
