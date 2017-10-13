@@ -39,7 +39,7 @@
 #define MSAC0 17 // no binary stuff here
 #define MSPDp 58
 #define ROLLBACK 99
-#define DEBUG_DICTIONARY 244 
+#define DEBUG_DICTIONARY 254 
 
 #define SYMBMOD 60
 #define OUTEST 61
@@ -90,19 +90,19 @@
 
 //Split asterisk and 8 number bar key tracking constants
 #define GRPX 0b11100000
-#define Xr   0b11101000
                      
-#define N1 0b11100000
-#define N2 0b11100001
-#define N3 0b11100010
-#define N4 0b11100011
-#define N6 0b11110011
-#define N7 0b11110010
-#define N8 0b11110001
-#define N9 0b11110000
+#define N1 0b11100011
+#define N2 0b11100010
+#define N3 0b11100001
+#define N4 0b11100000
+#define N6 0b11110000
+#define N7 0b11110001
+#define N8 0b11110010
+#define N9 0b11110011
 // The numbers shift into one variable, gets ored into either left or right variable
 // Zl and Xr handled on their own with ifs, doesn't matter what the actual value is really.
-#define Zl 0b11111000  //For split left S tracking
+#define Zl 0b11110100  //For split left S tracking
+#define Xr 0b11110101
 
 
 #ifdef MOUSEKEY_ENABLE
@@ -253,7 +253,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // TxBolt over Serial
 [TXBOLT] = KEYMAP(
        M(DEBUG_DICTIONARY), KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,  
-       KC_NO,   M(NM),   M(N1),   M(N2),   M(N4),   M(N4),  M(X),  
+       KC_NO,   M(NM),   M(N1),   M(N2),   M(N3),   M(N4),  M(X),  
        KC_NO,   KC_NO,   M(Zl),   M(Tl),   M(Pl),   M(Hl),
        KC_NO,   KC_NO,   M(Sl),   M(Kl),   M(Wl),   M(Rl),   M(X),
        KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,
@@ -654,83 +654,83 @@ bool process_record_user (uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
+uint8_t lpressed_count = 0;
+uint8_t rpressed_count = 0;
+#define L_TRACK_COUNT() if (newkey) { if (pressed) lpressed_count++; else lpressed_count--; }
+#define R_TRACK_COUNT() if (newkey) { if (pressed) rpressed_count++; else rpressed_count--; }
+#define BOLTMASK 0b00111111
+
 const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
 {
   // MACRODOWN only works in this function
 
       uint8_t boltstenokey = id;
       uint8_t layer = biton32(layer_state);
+      uint8_t pressed = record->event.pressed;
       if (layer==TXBOLT){
-          if (record->event.pressed) {
-            if (id == DEBUG_DICTIONARY){
-                  dump_dictionary();
-            }
-            if (id >= GRPX) {
-                if (id == Xr) {
-                    boltstenokey = X;
-                } else if (id == Zl) {
-                    boltstenokey = Sl;
-                } else if (id >= N1 && id <= N9) {
-                    boltstenokey = NM;
-                }
-            }/* else {
-                boltstenokey = id;
-            } // set to id at initialization */
-
-            uint8_t grp = (boltstenokey & GRPMASK) >> 6;
-            chord[grp] |= boltstenokey;
-            // That covers original bolt functionality,
-            // next add keys to the extended chord.
-            uint16_t newkey;
-#define BOLTMASK 0b00111111
-            if (id < NM) {
-                //extchord |= (0b00111111 & boltstenokey) << (6 * grp);
-                //try one, if it's empty try the other
-                if (id <= X) {
-                    newkey = (BOLTMASK & id) << ((6 * grp)+1);
-                    //lchord = lchord | newkey; 
-                    lchord = lchord | bin_mirror(newkey, 16); 
-                } else if (id <= Zr) {
-                    if (grp == 1) { // still an E or U)
-                        newkey = (BOLTMASK & id) << 2; //starts at 4 over, want it 6 over to make room for number and star stuff
-                    } else {
-                        newkey = (BOLTMASK & id) << 8;
-                        if (id >= Tr) newkey = newkey << 6;
-                        if (id == Pr || id == Lr) {
-                            newkey = newkey << 1;
-                        } else if ((id % 2) == 0) {
-                            newkey = newkey >> 1;
-                        } else {
-                            newkey = newkey << 1; //not as simple as even odd, go to sleep
-                        }
-                    }
-                    rchord = rchord | newkey; 
-                } else if (id == Zl) {
-                    newkey = 0x80;
-                    lchord = lchord | newkey;
-                }
-            } else {
-                // Figure out where to put number and star stuff later,
-                //   just make sure that first thing worked first.
-                //uint8_t bit_position = (0b00001111 & id) - 1;
-                //extchord |= 1 << (bit_position + 23);
-            }
-            /*
-            if (id < GRPX || id == N0) { // bit in the uint32_t extchord
-                extchord |= (0b00111111 & boltstenokey) << (6 * grp);
-            } else {
-                uint8_t bit_position = (0b00001111 & id) - 1;
-                extchord |= 1 << (bit_position + 23);
-            }
-            */
+          if (pressed && id == DEBUG_DICTIONARY){
+                dump_dictionary();
           }
-          else {
+          if (id >= GRPX) {
+              if (id == Xr) {
+                  boltstenokey = X;
+              } else if (id == Zl) {
+                  boltstenokey = Sl;
+              } else if (id >= N1 && id <= N9) {
+                  boltstenokey = NM;
+              }
+          }/* else {
+              boltstenokey = id;
+          } // set to id at initialization */
+
+          uint8_t grp = (boltstenokey & GRPMASK) >> 6;
+          if (pressed) chord[grp] |= boltstenokey;
+          // That covers original bolt functionality,
+          // next add keys to the extended chord.
+          uint16_t newkey;
+          if (id < NM) {
+              if (id <= X) {
+                  newkey = (BOLTMASK & id) << ((6 * grp)+1);
+                  lchord = lchord | bin_mirror(newkey, 16); L_TRACK_COUNT();
+              } else if (id <= Zr) {
+                  if (grp == 1) { // still an E or U)
+                      newkey = (BOLTMASK & id) << 2; 
+                  } else {
+                      newkey = (BOLTMASK & id) << 8;
+                      if (id >= Tr) newkey = newkey << 6;
+                      if (id == Pr || id == Lr) {
+                          newkey = newkey << 1;
+                      } else if ((id % 2) == 0) {
+                          newkey = newkey >> 1;
+                      } else {
+                          newkey = newkey << 1;
+                      }
+                  }
+                  rchord = rchord | newkey; R_TRACK_COUNT();
+              }
+          } else if (id < Zl) { /** Extended keys handling: num bar first **/
+                              // this \/ make sure sided num bar indicator is set too
+              newkey = (1 << (0x0F & id)) | 0x10;
+              if ((0xF0 & id) == 0xF0) { rchord = rchord | newkey; R_TRACK_COUNT(); }
+              else           { lchord = lchord | newkey; L_TRACK_COUNT(); }
+          } else if (id == Zl) {
+              newkey = 0x8000; /*                           top left S */
+              lchord = lchord | newkey; L_TRACK_COUNT();
+          } else if (id == Xr) {
+              newkey = 0x20;   /*                              right * */
+              rchord = rchord | newkey; R_TRACK_COUNT();
+          }
+
+//uint8_t lpressed_count = 0;
+          // decrement on deemed release keys, lower limit counts to zero?
+          if (!pressed) {
+              //  These parts give independent chord releasing of each keyboard half
+            //if (lpressed_count == 0) { translate_and_send(lchord>>6); lchord = 0; }
+            //if (rpressed_count == 0) { translate_and_send(rchord>>6); rchord = 0; }
             if (pressed_count == 0) {
               send_chord();
-              //lchord = lchord >> 6;
               debug_chord(lchord);
               debug_chord(rchord);
-              translate_and_send(lchord);
               QUICK_TAP(KC_ENT);
               chord[0] = chord[1] = chord[2] = chord[3] = 0;
               lchord = 0;
