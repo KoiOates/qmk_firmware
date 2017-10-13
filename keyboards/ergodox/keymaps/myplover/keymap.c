@@ -105,6 +105,44 @@
 #define Xr 0b11110101
 
 
+// Bit locations of keys on a mirror-image-consistent half steno keyboard
+#define mZ 0x8000
+#define mS 0x4000
+#define mT 0x2000
+#define mK 0x1000
+#define mP 0x0800
+#define mW 0x0400
+#define mH 0x0200
+#define mR 0x0100
+#define mA 0x0080
+#define mO 0x0040
+#define mX 0x0020
+#define mN 0x0010
+#define m8 0x0008
+#define m4 0x0004
+#define m2 0x0002
+#define m1 0x0001
+
+// tm for temporary modifier, sm for sticky modifier
+#define tmALF               0x0001
+#define tmSFT               0x0002
+#define tmCTL               0x0004
+#define tmALT               0x0008
+#define tmSPR               0x0010
+#define tmNAV               0x0020
+#define tmNUM               0x0040
+#define tmMOS               0x0080
+
+#define smALF               0x0100
+#define smSFT               0x0200
+#define smCTL               0x0400
+#define smALT               0x0800
+#define smSPR               0x1000
+#define smNAV               0x2000
+#define smNUM               0x4000
+#define smMOS               0x8000
+
+
 #ifdef MOUSEKEY_ENABLE
 uint8_t mousespeed = KC_MS_ACCEL2 ;
 uint8_t mousespeedplus=0;
@@ -658,9 +696,11 @@ bool process_record_user (uint16_t keycode, keyrecord_t *record) {
 
 uint8_t lpressed_count = 0;
 uint8_t rpressed_count = 0;
-
-#define L_TRACK_COUNT() lchord = lchord | newkey; if (newkey) { if (pressed) lpressed_count++; else lpressed_count--; }
-#define R_TRACK_COUNT() rchord = rchord | newkey; if (newkey) { if (pressed) rpressed_count++; else rpressed_count--; }
+uint16_t steno_state = smALF;
+#define L_TRACK_COUNT() lchord = lchord | newkey; lcurchord = lcurchord ^ newkey; \
+                        if (newkey) { if (pressed) lpressed_count++; else lpressed_count--; }
+#define R_TRACK_COUNT() rchord = rchord | newkey; rcurchord = rcurchord ^ newkey; \
+                        if (newkey) { if (pressed) rpressed_count++; else rpressed_count--; }
 #define BOLTMASK 0b00111111
 
 const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
@@ -688,8 +728,7 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
 
           uint8_t grp = (boltstenokey & GRPMASK) >> 6;
           if (pressed) chord[grp] |= boltstenokey;
-          // That covers original bolt functionality,
-          // next add keys to the extended chord.
+          // That covers original bolt functionality, next add keys to the extended chord.
           uint16_t newkey;
           if (id < NM) {
               if (id <= X) {
@@ -724,18 +763,39 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
               newkey = 0x20;   /*                              right * */
               R_TRACK_COUNT();
           }
+          /*// checking progress of l/rcurchord
+          debug_chord(lcurchord); debug_chord(rcurchord); QUICK_TAP(KC_ENT);*/
 
 //uint8_t lpressed_count = 0;
           // decrement on deemed release keys, lower limit counts to zero?
           if (!pressed) {
-              //  These parts give independent chord releasing of each keyboard half
-            //if (lpressed_count == 0) { translate_and_send(lchord>>6); lchord = 0; }
-            //if (rpressed_count == 0) { translate_and_send(rchord>>6); rchord = 0; }
-            if (pressed_count == 0) {
+            //  These parts give independent chord releasing of each keyboard half
+              /*
+            if (lpressed_count == 0) {
+                translation = translate_chord;
+                check_for_modifiers(rchord, translation); //Only change modes if the chord
+                //pressed alone or with an actual alphabetical character to avoid accidents.
+                // Got to know what the translation was to make that decision.
+            } */ //rough draft
+              
+            // By this point, modifier keys and mode switching will have been set in
+            // global variables.
+
+            // Seperarate translation and sending. Translation may come up with nothing.
+            // If it does, there's no sense in checking for modifiers, could have just been
+            // an accident. Just send the actual chord. If there is a translation, then
+            // you can set the modifiers (possibly switching into alphabet mode) and
+            // if alphabet mode is set, it will send the character instead of the bolt
+            // code for the chord.
+            if (steno_state & (tmALF | smALF)) {
+              if (lpressed_count == 0) { translate_and_send(lchord>>6); lchord = 0; }
+              if (rpressed_count == 0) { translate_and_send(rchord>>6); rchord = 0; }
+
+            } else if (pressed_count == 0) {
               send_chord();
-              debug_chord(lchord);
-              debug_chord(rchord);
-              QUICK_TAP(KC_ENT);
+              //debug_chord(lchord);
+              //debug_chord(rchord);
+              //QUICK_TAP(KC_ENT);
               chord[0] = chord[1] = chord[2] = chord[3] = 0;
               lchord = 0;
               rchord = 0;
