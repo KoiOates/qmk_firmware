@@ -619,12 +619,15 @@ uint8_t reset_bs_tab_ok = 1;
 
 //  TXBOLT copy paste starts here {
 uint8_t chord[4] = {0,0,0,0};
+uint8_t pressed_count = 0;
+
 uint16_t lchord = 0;
 uint16_t rchord = 0;
 uint16_t lcurchord = 0;
 uint16_t rcurchord = 0;
 uint16_t steno_state = 0; //lock_modALF;
-uint8_t pressed_count = 0;
+uint8_t suppress_next_bolt = 0;
+uint8_t allow_bolt = 1;
 
 void send_chord(void)
 {
@@ -651,7 +654,6 @@ uint16_t bin_mirror(int n, int bits) {
 }
 
 
-
 #define QUICK_TAP(kc) register_code(kc); wait_ms(5); unregister_code(kc)
 #define SHIFT_TAP(kc) register_code(KC_LSFT); register_code(kc); wait_ms(5); unregister_code(kc); unregister_code(KC_LSFT)
 void debug_chord(uint16_t extchord)
@@ -668,7 +670,7 @@ void debug_chord(uint16_t extchord)
         if (i % 8 == 7) {
             QUICK_TAP(KC_SPC);
         } else if (i % 4 == 3) {
-            SHIFT_TAP(KC_MINS);
+            QUICK_TAP(KC_MINS);
         }
     }
     QUICK_TAP(KC_ENT);
@@ -707,11 +709,11 @@ void tap_key(uint16_t keycode, uint16_t opposite_chord)
        QUICK_TAP(keycode);
        if (steno_state & 0x008F) { // if any modifier key or ALF has just been pressed down
    //|   ********** Watch out for the bitmask above if you're adding new modifiers/modeswitchers
-           HANDLE_MODIFIER_AFTER_TAP(ALF, opposite_chord); //Janky, but debugging later
            HANDLE_MODIFIER_AFTER_TAP(SFT, opposite_chord);
            HANDLE_MODIFIER_AFTER_TAP(CTL, opposite_chord);
            HANDLE_MODIFIER_AFTER_TAP(ALT, opposite_chord);
            HANDLE_MODIFIER_AFTER_TAP(GUI, opposite_chord);
+           HANDLE_MODIFIER_AFTER_TAP(ALF, opposite_chord); //Janky, but debugging later
        }
     }
 }
@@ -864,10 +866,21 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
           // decrement on deemed release keys, lower limit counts to zero?
           control_temporary_modifiers(lcurchord, rcurchord);
           control_temporary_modifiers(rcurchord, lcurchord);
+          if (steno_state) {  // if any modifiers are flagged sticky or locked
+              //QUICK_TAP(KC_S); QUICK_TAP(KC_T); QUICK_TAP(KC_A); QUICK_TAP(KC_T); QUICK_TAP(KC_ENT);
+              //debug_chord(steno_state);
+              allow_bolt = 0;
+          } else {
+              if (allow_bolt == 0) {
+                  allow_bolt = 1;
+                  suppress_next_bolt = 1;
+              }
+          }
           if (!pressed) {
             //  These parts give independent chord releasing of each keyboard half
-            if (steno_state & (temp_modALF | lock_modALF)) {
-              //if (rchord == (mN | m1 | m4 | m8) && !(steno_state & lock_modALF)) { steno_state = steno_state ^ lock_modALF; }
+            if ((steno_state & (temp_modALF | lock_modALF)) || suppress_next_bolt || !allow_bolt) {
+               //if (suppress_next_bolt) { QUICK_TAP(KC_S); QUICK_TAP(KC_N); QUICK_TAP(KC_SPC); }
+               //if (!allow_bolt) { QUICK_TAP(KC_N); QUICK_TAP(KC_L); QUICK_TAP(KC_SPC); }
               if (lpressed_count == 0 && lchord) {
                   if (!(lchord & mModtoggle)) tap_key(translate(lchord>>6), rcurchord);
                   lchord = 0;
@@ -877,18 +890,26 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
                   rchord = 0;
               }
 
-            } else if (pressed_count == 0) {
-              //if (rchord == (mN | m1 | m4 | m8)) {
-              //    steno_state = steno_state & lock_modALF;
-              //} else {
-                  send_chord();
-                  debug_chord(lchord);
-                  debug_chord(rchord);
-                  //QUICK_TAP(KC_ENT);
-                  chord[0] = chord[1] = chord[2] = chord[3] = 0;
-                  lchord = 0;
-                  rchord = 0;
-              //}
+            } else {
+                if (lpressed_count == 0) lchord = 0;
+                if (rpressed_count == 0) rchord = 0;
+                if ((pressed_count == 0) && allow_bolt) {
+                    if (suppress_next_bolt) {
+                        suppress_next_bolt = 0;
+                    } else {
+                        send_chord();
+                        //debug_chord(lchord);
+                        //debug_chord(rchord);
+                        //QUICK_TAP(KC_ENT);
+                        chord[0] = chord[1] = chord[2] = chord[3] = 0;
+                    }
+                }
+            }
+
+            if ((pressed_count == 0) && allow_bolt) {
+                suppress_next_bolt = 0;
+                clear_keyboard();           //Just to make sure no leftover modifiers before sending whole strings
+                chord[0] = chord[1] = chord[2] = chord[3] = 0;
             }
           }
           return MACRO_NONE;
