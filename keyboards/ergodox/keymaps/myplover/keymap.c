@@ -123,25 +123,49 @@
 #define m2 0x0002
 #define m1 0x0001
 
-// tm for temporary modifier, sm for sticky modifier
-#define tmALF               0x0001
-#define tmSFT               0x0002
-#define tmCTL               0x0004
-#define tmALT               0x0008
-#define tmSPR               0x0010
-#define tmNAV               0x0020
-#define tmNUM               0x0040
-#define tmMOS               0x0080
+uint16_t mCTL = mO;
+uint16_t mALT = mA;
+uint16_t mALF = m1;
+#define KC_LALF 0 //dummy define to prevent keypress but reuse modifier chord code for mode switching
+uint16_t mSFT = m2;
+uint16_t mModtoggle = m4;
+uint16_t mModlock = m8;
+uint16_t mGUI = mZ;
+uint16_t mod_mask = 0x80C3; //not sure if I need this...
+/*0x0040
+0x0080
+0x0002
+0x0001
+0x80C3*/
 
-#define smALF               0x0100
-#define smSFT               0x0200
-#define smCTL               0x0400
-#define smALT               0x0800
-#define smSPR               0x1000
-#define smNAV               0x2000
-#define smNUM               0x4000
-#define smMOS               0x8000
+#define green4   When a modifier chord is first pressed, its flag is set and its key registered.
+#define green1   All modifier flags are checked on the release of a normal (translated) key, and any that are both not locked and not held down
+#define green2   are unregistered. Not locked but held down, the flag is cleared, and if the flag is clear and not locked when the modifier
+#define green3   key is released (not the whole chord just the modifier) then the key is also unregistered.
+//
+//To make this do a real capslock, it would have to be released and reinstated before number or symbol
+// key presses occur. Can ergodox push an actual capslock? Could always have a capslock dictionary too, if things are done in such a way
+// as to save space.
+//
+// tm for temporary modifier, lm for locked modifier
+#define temp_modSFT               0x0001
+#define temp_modCTL               0x0002
+#define temp_modALT               0x0004
+#define temp_modGUI               0x0008
+#define temp_modNAV               0x0010
+#define temp_modNUM               0x0020
+#define temp_modMOS               0x0040
+#define temp_modALF               0x0080
 
+#define lock_modSFT               0x0100
+#define lock_modCTL               0x0200
+#define lock_modALT               0x0400
+#define lock_modGUI               0x0800
+#define lock_modNAV               0x1000
+#define lock_modNUM               0x2000
+#define lock_modMOS               0x4000
+#define lock_modALF               0x8000
+                            
 
 #ifdef MOUSEKEY_ENABLE
 uint8_t mousespeed = KC_MS_ACCEL2 ;
@@ -599,6 +623,7 @@ uint16_t lchord = 0;
 uint16_t rchord = 0;
 uint16_t lcurchord = 0;
 uint16_t rcurchord = 0;
+uint16_t steno_state = 0; //lock_modALF;
 uint8_t pressed_count = 0;
 
 void send_chord(void)
@@ -612,6 +637,8 @@ void send_chord(void)
 }
 // }
 
+
+
 uint16_t bin_mirror(int n, int bits) {
     int out = 0;
     int bit = 0;
@@ -622,6 +649,8 @@ uint16_t bin_mirror(int n, int bits) {
     }
     return out;
 }
+
+
 
 #define QUICK_TAP(kc) register_code(kc); wait_ms(5); unregister_code(kc)
 #define SHIFT_TAP(kc) register_code(KC_LSFT); register_code(kc); wait_ms(5); unregister_code(kc); unregister_code(KC_LSFT)
@@ -658,23 +687,89 @@ void debug_translate_and_send(uint16_t chord)
     debug_chord(KC_B);
 }
 
-void translate_and_send(uint16_t chord)
+
+
+// Called when a translated key is sent down the USB
+void handle_modifier_after_tap(uint16_t modifier_chord_key, uint16_t keycode, uint16_t opposite_chord, uint16_t temp_mod_bit, uint16_t lock_mod_bit) {
+    if (temp_mod_bit & steno_state) {
+        // if shift is not locked... 
+        if (!(lock_mod_bit & steno_state)) {
+            steno_state = steno_state ^ temp_mod_bit;
+            if (!(opposite_chord & modifier_chord_key) && keycode) {//...and a shift is not being held down in the opposite hand chord:
+                unregister_code(keycode);
+            }}}}
+#define HANDLE_MODIFIER_AFTER_TAP(mod_name, opposite_chord) \
+        handle_modifier_after_tap(m ## mod_name, KC_L ## mod_name, opposite_chord, temp_mod ## mod_name, lock_mod ## mod_name)
+
+void tap_key(uint16_t keycode, uint16_t opposite_chord)
 {
-    uint16_t keycode = pgm_read_word_near(chorddict + chord);
     if (keycode != 0) {
        QUICK_TAP(keycode);
-    } 
+       if (steno_state & 0x008F) { // if any modifier key or ALF has just been pressed down
+   //|   ********** Watch out for the bitmask above if you're adding new modifiers/modeswitchers
+           HANDLE_MODIFIER_AFTER_TAP(ALF, opposite_chord); //Janky, but debugging later
+           HANDLE_MODIFIER_AFTER_TAP(SFT, opposite_chord);
+           HANDLE_MODIFIER_AFTER_TAP(CTL, opposite_chord);
+           HANDLE_MODIFIER_AFTER_TAP(ALT, opposite_chord);
+           HANDLE_MODIFIER_AFTER_TAP(GUI, opposite_chord);
+       }
+    }
 }
+
+uint16_t translate(uint16_t chord)
+{
+   uint16_t * data = pgm_read_word_near(chorddict + chord);
+   if (data) {
+       uint8_t length = pgm_read_word_near(data);
+       if (length) {
+           return pgm_read_word_near(data + length); //Just return the last entry in the array for testing 
+       } else {
+           return 0;
+       }
+   } else{
+       return 0;
+   }
+}
+
+
+// Called whenever a key is pressed or released with current, unreleased chord state
+void control_one_modifier(uint16_t modifier_chord_key, uint16_t keycode, uint16_t chord, uint16_t temp_mod_bit, uint16_t lock_mod_bit) {
+    if ((modifier_chord_key & chord) && (mModtoggle & chord)) {  // If modifier and modtoggle key are being held:
+        if (mModlock & chord) steno_state = steno_state ^ lock_mod_bit;
+        if (!(steno_state & temp_mod_bit) && keycode) {
+            register_code(keycode);
+        }
+        steno_state = steno_state ^ temp_mod_bit;
+    } else {
+        if (!(steno_state & (temp_mod_bit | lock_mod_bit))) {
+            unregister_code(keycode);
+        }
+    }
+}
+#define CONTROL_ONE_MODIFIER(mod_name, chord) \
+        control_one_modifier(m ## mod_name, KC_L ## mod_name, chord, temp_mod ## mod_name, lock_mod ## mod_name)
+
+void control_temporary_modifiers(uint16_t chord, uint16_t opposite_chord) {
+    CONTROL_ONE_MODIFIER(ALF, chord);// Janky, but debugging later
+    CONTROL_ONE_MODIFIER(SFT, chord);
+    CONTROL_ONE_MODIFIER(CTL, chord);
+    CONTROL_ONE_MODIFIER(ALT, chord);
+    CONTROL_ONE_MODIFIER(GUI, chord);
+
+}
+
 
 void dump_dictionary()
 {
-    uint16_t keycode = 0;
-    for (uint16_t i = 0; i < 496; i++){
-        keycode = pgm_read_word_near(chorddict + i);
-        if (keycode != 0) {
-            QUICK_TAP(keycode);
-        } else {
-            QUICK_TAP(KC_0);
+    if (0) {  //don't actually do this for now, save for diagnostics
+        uint16_t keycode = 0;
+        for (uint16_t i = 0; i < 1023; i++){
+            keycode = pgm_read_word_near(chorddict + i);
+            if (keycode != 0) {
+                QUICK_TAP(keycode);
+            } else {
+                QUICK_TAP(KC_0);
+            }
         }
     }
 }
@@ -696,7 +791,6 @@ bool process_record_user (uint16_t keycode, keyrecord_t *record) {
 
 uint8_t lpressed_count = 0;
 uint8_t rpressed_count = 0;
-uint16_t steno_state = smALF;
 #define L_TRACK_COUNT() lchord = lchord | newkey; lcurchord = lcurchord ^ newkey; \
                         if (newkey) { if (pressed) lpressed_count++; else lpressed_count--; }
 #define R_TRACK_COUNT() rchord = rchord | newkey; rcurchord = rcurchord ^ newkey; \
@@ -768,37 +862,33 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
 
 //uint8_t lpressed_count = 0;
           // decrement on deemed release keys, lower limit counts to zero?
+          control_temporary_modifiers(lcurchord, rcurchord);
+          control_temporary_modifiers(rcurchord, lcurchord);
           if (!pressed) {
             //  These parts give independent chord releasing of each keyboard half
-              /*
-            if (lpressed_count == 0) {
-                translation = translate_chord;
-                check_for_modifiers(rchord, translation); //Only change modes if the chord
-                //pressed alone or with an actual alphabetical character to avoid accidents.
-                // Got to know what the translation was to make that decision.
-            } */ //rough draft
-              
-            // By this point, modifier keys and mode switching will have been set in
-            // global variables.
-
-            // Seperarate translation and sending. Translation may come up with nothing.
-            // If it does, there's no sense in checking for modifiers, could have just been
-            // an accident. Just send the actual chord. If there is a translation, then
-            // you can set the modifiers (possibly switching into alphabet mode) and
-            // if alphabet mode is set, it will send the character instead of the bolt
-            // code for the chord.
-            if (steno_state & (tmALF | smALF)) {
-              if (lpressed_count == 0) { translate_and_send(lchord>>6); lchord = 0; }
-              if (rpressed_count == 0) { translate_and_send(rchord>>6); rchord = 0; }
+            if (steno_state & (temp_modALF | lock_modALF)) {
+              //if (rchord == (mN | m1 | m4 | m8) && !(steno_state & lock_modALF)) { steno_state = steno_state ^ lock_modALF; }
+              if (lpressed_count == 0 && lchord) {
+                  if (!(lchord & mModtoggle)) tap_key(translate(lchord>>6), rcurchord);
+                  lchord = 0;
+              }
+              if (rpressed_count == 0 && rchord) {
+                  if (!(rchord & mModtoggle)) tap_key(translate(rchord>>6), lcurchord);
+                  rchord = 0;
+              }
 
             } else if (pressed_count == 0) {
-              send_chord();
-              //debug_chord(lchord);
-              //debug_chord(rchord);
-              //QUICK_TAP(KC_ENT);
-              chord[0] = chord[1] = chord[2] = chord[3] = 0;
-              lchord = 0;
-              rchord = 0;
+              //if (rchord == (mN | m1 | m4 | m8)) {
+              //    steno_state = steno_state & lock_modALF;
+              //} else {
+                  send_chord();
+                  debug_chord(lchord);
+                  debug_chord(rchord);
+                  //QUICK_TAP(KC_ENT);
+                  chord[0] = chord[1] = chord[2] = chord[3] = 0;
+                  lchord = 0;
+                  rchord = 0;
+              //}
             }
           }
           return MACRO_NONE;
