@@ -703,10 +703,22 @@ void handle_modifier_after_tap(uint16_t modifier_chord_key, uint16_t keycode, ui
 #define HANDLE_MODIFIER_AFTER_TAP(mod_name, opposite_chord) \
         handle_modifier_after_tap(m ## mod_name, KC_L ## mod_name, opposite_chord, temp_mod ## mod_name, lock_mod ## mod_name)
 
-void tap_key(uint16_t keycode, uint16_t opposite_chord)
+void tap_key(uint16_t * keyarray, uint16_t opposite_chord)
 {
-    if (keycode != 0) {
-       QUICK_TAP(keycode);
+    if (keyarray) {
+       uint16_t length = pgm_read_word_near(keyarray);
+       uint8_t shifted = 0;
+       uint16_t keycode = 0;
+
+       for (uint8_t i = 1; i <= length; i++) {
+           keycode = pgm_read_word_near(keyarray + i);
+           if (keycode == KC_LSFT) {
+               register_code(KC_LSFT);  //Not sure what happens if shift is registered twice, will find out
+               shifted = 1;
+           } else {
+               QUICK_TAP(keycode); }
+       }
+       if (shifted && !(steno_state & mSFT)) unregister_code(KC_LSFT);
        if (steno_state & 0x008F) { // if any modifier key or ALF has just been pressed down
    //|   ********** Watch out for the bitmask above if you're adding new modifiers/modeswitchers
            HANDLE_MODIFIER_AFTER_TAP(SFT, opposite_chord);
@@ -718,18 +730,18 @@ void tap_key(uint16_t keycode, uint16_t opposite_chord)
     }
 }
 
-uint16_t translate(uint16_t chord)
+uint16_t * translate(uint16_t chord)
 {
    uint16_t * data = pgm_read_word_near(chorddict + chord);
    if (data) {
        uint8_t length = pgm_read_word_near(data);
        if (length) {
-           return pgm_read_word_near(data + length); //Just return the last entry in the array for testing 
+           return data; // Changed it to return the actual pointer whose first element is length
        } else {
-           return 0;
+           return 0; // Or zero if it's a length zero record, can't remember when that would happen though
        }
    } else{
-       return 0;
+       return 0; // Zero if the chord is undefined
    }
 }
 
@@ -877,11 +889,13 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
             if ((steno_state & (temp_modALF | lock_modALF)) || \
                     suppress_next_bolt || !allow_bolt) { // If any alphabet modifier was recently pushed, keep doing this
               if (lpressed_count == 0 && lchord) {       //                                instead of sending bolt chords.
-                  if (!(lchord & mModtoggle)) tap_key(translate(lchord>>6), rcurchord);
+                  if (lchord == mX) { QUICK_TAP(KC_BSPC);
+                  } else if (!(lchord & mModtoggle)) { tap_key(translate(lchord>>6), rcurchord); }
                   lchord = 0;
               }
               if (rpressed_count == 0 && rchord) {
-                  if (!(rchord & mModtoggle)) tap_key(translate(rchord>>6), lcurchord);
+                  if (rchord == mX) { QUICK_TAP(KC_BSPC); // Technically this should probably do something to prevent modifiers...
+                  } else if (!(rchord & mModtoggle)) { tap_key(translate(rchord>>6), lcurchord); }
                   rchord = 0;
               }
 
