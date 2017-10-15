@@ -99,7 +99,6 @@
 #define N7 0b11110001
 #define N8 0b11110010
 #define N9 0b11110011
-// The numbers shift into one variable, gets ored into either left or right variable
 // Zl and Xr handled on their own with ifs, doesn't matter what the actual value is really.
 #define Zl 0b11110100  //For split left S tracking
 #define Xr 0b11110101
@@ -146,8 +145,9 @@ uint16_t mod_mask = 0x80C3; //not sure if I need this...
 //To make this do a real capslock, it would have to be released and reinstated before number or symbol
 // key presses occur. Can ergodox push an actual capslock? Could always have a capslock dictionary too, if things are done in such a way
 // as to save space.
-//
-// tm for temporary modifier, lm for locked modifier
+
+// temp_mod is simultaneous with a key or sticky for the next key,
+// lock_mod holds the modifier key until a repeat of the chord triggers its release (like a capslock)
 #define temp_modSFT               0x0001
 #define temp_modCTL               0x0002
 #define temp_modALT               0x0004
@@ -625,7 +625,7 @@ uint16_t lchord = 0;
 uint16_t rchord = 0;
 uint16_t lcurchord = 0;
 uint16_t rcurchord = 0;
-uint16_t steno_state = 0; //lock_modALF;
+uint16_t steno_state = 0;
 uint8_t suppress_next_bolt = 0;
 uint8_t allow_bolt = 1;
 
@@ -713,7 +713,7 @@ void tap_key(uint16_t keycode, uint16_t opposite_chord)
            HANDLE_MODIFIER_AFTER_TAP(CTL, opposite_chord);
            HANDLE_MODIFIER_AFTER_TAP(ALT, opposite_chord);
            HANDLE_MODIFIER_AFTER_TAP(GUI, opposite_chord);
-           HANDLE_MODIFIER_AFTER_TAP(ALF, opposite_chord); //Janky, but debugging later
+           HANDLE_MODIFIER_AFTER_TAP(ALF, opposite_chord);
        }
     }
 }
@@ -752,7 +752,7 @@ void control_one_modifier(uint16_t modifier_chord_key, uint16_t keycode, uint16_
         control_one_modifier(m ## mod_name, KC_L ## mod_name, chord, temp_mod ## mod_name, lock_mod ## mod_name)
 
 void control_temporary_modifiers(uint16_t chord, uint16_t opposite_chord) {
-    CONTROL_ONE_MODIFIER(ALF, chord);// Janky, but debugging later
+    CONTROL_ONE_MODIFIER(ALF, chord);
     CONTROL_ONE_MODIFIER(SFT, chord);
     CONTROL_ONE_MODIFIER(CTL, chord);
     CONTROL_ONE_MODIFIER(ALT, chord);
@@ -862,13 +862,9 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
           /*// checking progress of l/rcurchord
           debug_chord(lcurchord); debug_chord(rcurchord); QUICK_TAP(KC_ENT);*/
 
-//uint8_t lpressed_count = 0;
-          // decrement on deemed release keys, lower limit counts to zero?
           control_temporary_modifiers(lcurchord, rcurchord);
           control_temporary_modifiers(rcurchord, lcurchord);
           if (steno_state) {  // if any modifiers are flagged sticky or locked
-              //QUICK_TAP(KC_S); QUICK_TAP(KC_T); QUICK_TAP(KC_A); QUICK_TAP(KC_T); QUICK_TAP(KC_ENT);
-              //debug_chord(steno_state);
               allow_bolt = 0;
           } else {
               if (allow_bolt == 0) {
@@ -878,10 +874,9 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
           }
           if (!pressed) {
             //  These parts give independent chord releasing of each keyboard half
-            if ((steno_state & (temp_modALF | lock_modALF)) || suppress_next_bolt || !allow_bolt) {
-               //if (suppress_next_bolt) { QUICK_TAP(KC_S); QUICK_TAP(KC_N); QUICK_TAP(KC_SPC); }
-               //if (!allow_bolt) { QUICK_TAP(KC_N); QUICK_TAP(KC_L); QUICK_TAP(KC_SPC); }
-              if (lpressed_count == 0 && lchord) {
+            if ((steno_state & (temp_modALF | lock_modALF)) || \
+                    suppress_next_bolt || !allow_bolt) { // If any alphabet modifier was recently pushed, keep doing this
+              if (lpressed_count == 0 && lchord) {       //                                instead of sending bolt chords.
                   if (!(lchord & mModtoggle)) tap_key(translate(lchord>>6), rcurchord);
                   lchord = 0;
               }
@@ -898,17 +893,17 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
                         suppress_next_bolt = 0;
                     } else {
                         send_chord();
-                        //debug_chord(lchord);
-                        //debug_chord(rchord);
-                        //QUICK_TAP(KC_ENT);
+                        //debug_chord(lchord); debug_chord(rchord); QUICK_TAP(KC_ENT); // uncomment to watch chords without plover translating
                         chord[0] = chord[1] = chord[2] = chord[3] = 0;
                     }
                 }
             }
-
+// TODO:
+// Last but not least, send a suppress space chord on the way out of alphabet locked mode
+// But not on the way out of alphabet temporary/sticky once mode.
             if ((pressed_count == 0) && allow_bolt) {
                 suppress_next_bolt = 0;
-                clear_keyboard();           //Just to make sure no leftover modifiers before sending whole strings
+                clear_keyboard();           //Just to make sure no leftover modifiers before sending whole strings, may be unnecessary
                 chord[0] = chord[1] = chord[2] = chord[3] = 0;
             }
           }
