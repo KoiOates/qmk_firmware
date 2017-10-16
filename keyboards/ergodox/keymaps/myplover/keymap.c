@@ -702,6 +702,12 @@ void handle_modifier_after_tap(uint16_t modifier_chord_key, uint16_t keycode, ui
             }}}}
 #define HANDLE_MODIFIER_AFTER_TAP(mod_name, opposite_chord) \
         handle_modifier_after_tap(m ## mod_name, KC_L ## mod_name, opposite_chord, temp_mod ## mod_name, lock_mod ## mod_name)
+#define HANDLE_ALL_MODIFIERS_AFTER_TAP() \
+           HANDLE_MODIFIER_AFTER_TAP(SFT, opposite_chord); \
+           HANDLE_MODIFIER_AFTER_TAP(CTL, opposite_chord); \
+           HANDLE_MODIFIER_AFTER_TAP(ALT, opposite_chord); \
+           HANDLE_MODIFIER_AFTER_TAP(GUI, opposite_chord); \
+           HANDLE_MODIFIER_AFTER_TAP(ALF, opposite_chord)
 
 void tap_key(uint16_t * keyarray, uint16_t opposite_chord)
 {
@@ -721,11 +727,7 @@ void tap_key(uint16_t * keyarray, uint16_t opposite_chord)
        if (shifted && !(steno_state & mSFT)) unregister_code(KC_LSFT);
        if (steno_state & 0x008F) { // if any modifier key or ALF has just been pressed down
    //|   ********** Watch out for the bitmask above if you're adding new modifiers/modeswitchers
-           HANDLE_MODIFIER_AFTER_TAP(SFT, opposite_chord);
-           HANDLE_MODIFIER_AFTER_TAP(CTL, opposite_chord);
-           HANDLE_MODIFIER_AFTER_TAP(ALT, opposite_chord);
-           HANDLE_MODIFIER_AFTER_TAP(GUI, opposite_chord);
-           HANDLE_MODIFIER_AFTER_TAP(ALF, opposite_chord);
+           HANDLE_ALL_MODIFIERS_AFTER_TAP();
        }
     }
 }
@@ -746,29 +748,42 @@ uint16_t * translate(uint16_t chord)
 }
 
 
+// It's not enough to look for the ring finger modifier being pushed. Must also ensure that other unallowed keys are not being pressed.
+//
 // Called whenever a key is pressed or released with current, unreleased chord state
-void control_one_modifier(uint16_t modifier_chord_key, uint16_t keycode, uint16_t chord, uint16_t temp_mod_bit, uint16_t lock_mod_bit) {
-    if ((modifier_chord_key & chord) && (mModtoggle & chord)) {  // If modifier and modtoggle key are being held:
-        if (mModlock & chord) steno_state = steno_state ^ lock_mod_bit;
+//0b0111 1111 0010 0000 Bits representing keys that wouldn't be held to trigger modifiers
+//0x   7    F    2    0
+void control_one_modifier(uint16_t modifier_chord_key, uint16_t keycode, uint16_t curchord, uint16_t temp_mod_bit, uint16_t lock_mod_bit, uint8_t pressed) {
+    if (!(0x7F20 & curchord) && (modifier_chord_key & curchord) && (mModtoggle & curchord)) {  // If modifier and modtoggle key are being held
         if (!(steno_state & temp_mod_bit) && keycode) {
             register_code(keycode);
         }
-        steno_state = steno_state ^ temp_mod_bit;
+        if (mModlock & curchord) {
+            steno_state = steno_state ^ lock_mod_bit;               //    but not any keys that don't form the modifier group.
+            // clear all modifier state when exiting locked alpha mode
+            if (lock_mod_bit == lock_modALF && !(steno_state & lock_modALF) && !pressed) {  //THIS IS WHERE IT WAS FIXED! CLEAN UP OTHER GARBAGE!
+                chord[0] = chord[1] = chord[2] = chord[3] = 0;
+                steno_state = 0;
+                clear_keyboard();
+            }
+        } else {
+            steno_state = steno_state ^ temp_mod_bit;
+        }
     } else {
         if (!(steno_state & (temp_mod_bit | lock_mod_bit))) {
             unregister_code(keycode);
         }
     }
 }
-#define CONTROL_ONE_MODIFIER(mod_name, chord) \
-        control_one_modifier(m ## mod_name, KC_L ## mod_name, chord, temp_mod ## mod_name, lock_mod ## mod_name)
+#define CONTROL_ONE_MODIFIER(mod_name, curchord, pressed) \
+        control_one_modifier(m ## mod_name, KC_L ## mod_name, curchord, temp_mod ## mod_name, lock_mod ## mod_name, pressed)
 
-void control_temporary_modifiers(uint16_t chord, uint16_t opposite_chord) {
-    CONTROL_ONE_MODIFIER(ALF, chord);
-    CONTROL_ONE_MODIFIER(SFT, chord);
-    CONTROL_ONE_MODIFIER(CTL, chord);
-    CONTROL_ONE_MODIFIER(ALT, chord);
-    CONTROL_ONE_MODIFIER(GUI, chord);
+void control_temporary_modifiers(uint16_t curchord, uint16_t opposite_chord, uint8_t pressed) {
+    CONTROL_ONE_MODIFIER(SFT, curchord, pressed);
+    CONTROL_ONE_MODIFIER(CTL, curchord, pressed);
+    CONTROL_ONE_MODIFIER(ALT, curchord, pressed);
+    CONTROL_ONE_MODIFIER(GUI, curchord, pressed);
+    CONTROL_ONE_MODIFIER(ALF, curchord, pressed);
 
 }
 
@@ -827,7 +842,7 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
                   boltstenokey = X;
               } else if (id == Zl) {
                   boltstenokey = Sl;
-              } else if (id >= N1 && id <= N9) {
+              } else if (id >= N4 && id <= N9) { //N4 is actually the lowest value, makes binary stuff later cleaner
                   boltstenokey = NM;
               }
           }/* else {
@@ -874,8 +889,13 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
           /*// checking progress of l/rcurchord
           debug_chord(lcurchord); debug_chord(rcurchord); QUICK_TAP(KC_ENT);*/
 
-          control_temporary_modifiers(lcurchord, rcurchord);
-          control_temporary_modifiers(rcurchord, lcurchord);
+          // Something around this section's messed up. When switching back to steno, if no other key is held down, it takes
+          // two additional alpha keystrokes to change back to steno.
+          //
+          // Probable place that's wrong: control_temporary_modifiers needs to differentiate
+          // between key up and key down. Locking of modifiers should happen on key up only.
+          control_temporary_modifiers(lcurchord, rcurchord, pressed);
+          control_temporary_modifiers(rcurchord, lcurchord, pressed);
           if (steno_state) {  // if any modifiers are flagged sticky or locked
               allow_bolt = 0;
           } else {
@@ -884,6 +904,7 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
                   suppress_next_bolt = 1;
               }
           }
+
           if (!pressed) {
             //  These parts give independent chord releasing of each keyboard half
             if ((steno_state & (temp_modALF | lock_modALF)) || \
@@ -903,7 +924,7 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
                 if (lpressed_count == 0) lchord = 0;
                 if (rpressed_count == 0) rchord = 0;
                 if ((pressed_count == 0) && allow_bolt) {
-                    if (suppress_next_bolt) {
+                    if (suppress_next_bolt) { //ignore suppress next bolt for a minute
                         suppress_next_bolt = 0;
                     } else {
                         send_chord();
@@ -919,6 +940,8 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
                 suppress_next_bolt = 0;
                 clear_keyboard();           //Just to make sure no leftover modifiers before sending whole strings, may be unnecessary
                 chord[0] = chord[1] = chord[2] = chord[3] = 0;
+                lchord = 0; lcurchord = 0;
+                rchord = 0; rcurchord = 0;
             }
           }
           return MACRO_NONE;
