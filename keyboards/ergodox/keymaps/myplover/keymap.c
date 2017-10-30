@@ -839,13 +839,13 @@ void control_one_modifier(uint16_t modifier_chord_key, uint16_t keycode,
         control_one_modifier(m ## mod_name, KC_L ## mod_name, half, opst_half, temp_mod ## mod_name, lock_mod ## mod_name, newkey, pressed)
 
 void control_temporary_modifiers(struct steno_halves half, struct steno_halves opst_half, uint16_t newkey, uint8_t pressed) {
-    if (disqualified_as_mod(half.chord, opst_half.chord)) { //TODO make this more restrictive so it won't run more than it has to
+    if ((half.chord & NON_MOD_MASK) && (half.chord & mModtoggle)) {
         // clear each modifier that is not locked, not the whole keyboard
         half.mods_awaiting_opp_dsqf      |= half.mods;
         opst_half.mods_awaiting_opp_dsqf |= opst_half.mods;  // not sure if I need to save it in these things or not...
-        CLEAR_EACH_UNLOCKED_MODIFIER();
+        CLEAR_EACH_UNLOCKED_MODIFIER();  //TODO should be clear each locked modifier on that particular hand at least for now
         // clear out all temporary modifier state.
-        steno_state &= 0xFF00; //upper bits are for locks, keep those
+        //steno_state &= 0xFF00; //upper bits are for locks, keep those
         half.mods = opst_half.mods = 0;
     } else {
         if (disqualified_as_mod(opst_half.chord, half.chord) && half.mods_awaiting_opp_dsqf) {
@@ -899,9 +899,9 @@ bool process_record_user (uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
-#define L_TRACK_COUNT() lchord = lchord | newkey; lcurchord = lcurchord ^ newkey; \
+#define L_TRACK_COUNT() lchord = lchord | newkey; lcurchord = lcurchord ^ newkey; leftkeypressed = 1;\
                         if (newkey) { if (pressed) lpressed_count++; else lpressed_count--; }
-#define R_TRACK_COUNT() rchord = rchord | newkey; rcurchord = rcurchord ^ newkey; \
+#define R_TRACK_COUNT() rchord = rchord | newkey; rcurchord = rcurchord ^ newkey; rightkeypressed = 1;\
                         if (newkey) { if (pressed) rpressed_count++; else rpressed_count--; }
 #define BOLTMASK 0b00111111
 
@@ -932,6 +932,8 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
           if (pressed) chord[grp] |= boltstenokey;
           // That covers original bolt functionality, next add keys to the extended chord.
           uint16_t newkey = 0;
+          uint8_t leftkeypressed = 0;
+          uint8_t rightkeypressed = 0;
           if (id < NM) {
               if (id <= X) {
                   newkey = (BOLTMASK & id) << ((6 * grp)+1);
@@ -974,13 +976,16 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
           // Probable place that's wrong: control_temporary_modifiers needs to differentiate
           // between key up and key down. Locking of modifiers should happen on key up only.
           if (newkey) {
-              control_temporary_modifiers(halves[LEFT], halves[RIGHT], newkey, pressed);
-              control_temporary_modifiers(halves[RIGHT], halves[LEFT], newkey, pressed);
-              if (pressed) {
-                  QUICK_TAP(KC_S); debug_chord(rchord); debug_chord(lchord);
-              } else {
-                  QUICK_TAP(KC_S); debug_chord(rchord); debug_chord(lchord);
-              }
+              if (leftkeypressed)  control_temporary_modifiers(halves[LEFT], halves[RIGHT], newkey, pressed);
+              if (rightkeypressed) control_temporary_modifiers(halves[RIGHT], halves[LEFT], newkey, pressed);
+
+              /*if (pressed) {
+                  if (leftkeypressed) {
+                      QUICK_TAP(KC_L);
+                  } else {
+                      QUICK_TAP(KC_R);}
+                  debug_chord(newkey);
+              }*/
           }
 
           if (!pressed) {
@@ -989,7 +994,7 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
               if (lpressed_count == 0 && lchord) {       //                                instead of sending bolt chords.
                   if (lchord == mX) { QUICK_TAP(KC_BSPC); did_firmware_translation_during_stroke = 1;
                   } else if (!(lchord & mModtoggle)) { tap_key(translate(lchord>>6), rchord); }
-                  QUICK_TAP(KC_L); debug_chord(lchord); QUICK_TAP(KC_ENT);
+                  //QUICK_TAP(KC_L); debug_chord(lchord); QUICK_TAP(KC_ENT);
                   lchord = 0;
                   halves[LEFT].mods_awaiting_toggle = halves[LEFT].mods_awaiting_opp_dsqf = 0;
               }
@@ -1000,12 +1005,12 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
                   } else if (!(rchord & mModtoggle)) { tap_key(translate(rchord>>6), lchord); }
                   // TODO TODO also // this // probably doesn't work the way I thought it would
                   // and then these two pieces can probably get refactored down pretty easily
-                  QUICK_TAP(KC_R); debug_chord(rchord); QUICK_TAP(KC_ENT);
+                  //QUICK_TAP(KC_R); debug_chord(rchord); QUICK_TAP(KC_ENT);
                   rchord = 0;
                   halves[RIGHT].mods_awaiting_toggle = halves[RIGHT].mods_awaiting_opp_dsqf = 0;
               }
 
-            } else {
+            } else {  // Does this need to be else? could also bleed through if other thing doesn't work.
                 if (lpressed_count == 0) lchord = 0;
                 if (rpressed_count == 0) rchord = 0;
                 if (pressed_count == 0) {
@@ -1017,7 +1022,8 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
                         // But not on the way out of alphabet temporary/sticky once mode.
                     } else if (!steno_state) { //if there's no modifiers to worry about, and nothing just translated through firmware...
                         send_chord();
-                        QUICK_TAP(KC_B); debug_chord(lchord); QUICK_TAP(KC_B); debug_chord(rchord); QUICK_TAP(KC_ENT); // uncomment to watch chords without plover translating
+                        QUICK_TAP(KC_B);
+                        //QUICK_TAP(KC_B); debug_chord(lchord); QUICK_TAP(KC_B); debug_chord(rchord); QUICK_TAP(KC_ENT); // uncomment to watch chords without plover translating
                         clear_keyboard();
                         chord[0] = chord[1] = chord[2] = chord[3] = 0;
                         lchord = rchord = lcurchord = rcurchord = 0;
