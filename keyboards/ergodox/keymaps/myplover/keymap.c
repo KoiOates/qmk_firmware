@@ -757,7 +757,7 @@ void tap_key(uint16_t * keyarray, struct steno_halves * opst_half)
                DEBUG_TAP(8);
                HANDLE_ALL_MODIFIERS_AFTER_TAP();
                if (!(lock_modALF & steno_state)) {
-                   if (opst_half->mods & mModtoggle) {
+                   if (opst_half->mods & temp_modALF) {
                        opst_half->mods_to_be_cleared_on_mod_up |= temp_modALF;
                        DEBUG_TAP(F);
                    } else {
@@ -795,18 +795,6 @@ uint16_t * translate(uint16_t chord)
 //0b0111 1111 0010 0000 Bits representing keys that wouldn't be held to trigger modifiers
 //0x   7    F    2    0
 #define NON_MOD_MASK 0x7420
-
-uint16_t disqualified_as_mod(uint16_t chord, uint16_t opst_chord) {
-    // To be a disqualified to be in toggling modifier mode, a half:
-    //      never had its mModtoggle key pushed
-    //      or 
-    //      had any of its nonmodifier keys pushed
-    //      or
-    //      had its opposite half NOT disqualified_as_mod
-    //       (both sides at once trying to do modifiers cancels all modifiers)
-    if (opst_chord) { return (chord & mModtoggle) || (chord & NON_MOD_MASK) || !(disqualified_as_mod(opst_chord, 0)); }
-    else            { return (chord & mModtoggle) || (chord & NON_MOD_MASK); }
-}
 
 void control_one_modifier(uint16_t modifier_chord_key, uint16_t keycode,
                           struct steno_halves * half, struct steno_halves * opst_half,
@@ -1034,9 +1022,9 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
           // Probable place that's wrong: control_temporary_modifiers needs to differentiate
           // between key up and key down. Locking of modifiers should happen on key up only.
           if (newkey) {
-              if (leftkeypressed & !halves[LEFT].disqualified_keys_pressed)
+              if (leftkeypressed && !halves[LEFT].disqualified_keys_pressed)
                   control_temporary_modifiers(&halves[LEFT], &halves[RIGHT], newkey, pressed);
-              if (rightkeypressed & !halves[RIGHT].disqualified_keys_pressed)
+              if (rightkeypressed && !halves[RIGHT].disqualified_keys_pressed)
                   control_temporary_modifiers(&halves[RIGHT], &halves[LEFT], newkey, pressed);
 
               /*if (pressed) {
