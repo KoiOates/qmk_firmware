@@ -673,8 +673,8 @@ uint16_t bin_mirror(int n, int bits) {
     return out;
 }
 
-
-#define DEBUG_TAP(kc) register_code(KC_ ## kc); wait_ms(1); unregister_code(KC_ ## kc)
+#define DEBUG_TAPPING 0
+#define DEBUG_TAP(kc) if (DEBUG_TAPPING){ register_code(KC_ ## kc); wait_ms(1); unregister_code(KC_ ## kc); }
 #define QUICK_TAP(kc) register_code(kc); wait_ms(1); unregister_code(kc)
 #define SHIFT_TAP(kc) register_code(KC_LSFT); register_code(kc); wait_ms(5); unregister_code(kc); unregister_code(KC_LSFT)
 void debug_chord(uint16_t extchord)
