@@ -630,11 +630,13 @@ struct steno_halves {
     uint8_t mods;  //Modifiers currently sticky, will be consumed on the next keycode translation.
     uint8_t mods_awaiting_toggle;   //Will trigger if modToggle pushed
     uint8_t mods_awaiting_opp_dsqf; //Modifiers awaiting opposite hand being disqualified to be a modifier with non mod keys {
+    uint8_t mods_to_be_cleared_on_mod_up;  //Mods go here after being consumed at least once.
+    uint8_t disqualified_keys_pressed;
     uint8_t pressed_count;
 };
 
-struct steno_halves halves[2] = { {0,0,0,0,0,0,0},
-                                  {0,0,0,0,0,0,0} };
+struct steno_halves halves[2] = { {0,0,0,0,0,0,0,0,0},
+                                  {0,0,0,0,0,0,0,0,0} };
 #define lchord halves[LEFT].chord
 #define rchord halves[RIGHT].chord
 #define lcurchord halves[LEFT].curchord
@@ -672,7 +674,8 @@ uint16_t bin_mirror(int n, int bits) {
 }
 
 
-#define QUICK_TAP(kc) register_code(kc); wait_ms(5); unregister_code(kc)
+#define DEBUG_TAP(kc) register_code(KC_ ## kc); wait_ms(1); unregister_code(KC_ ## kc)
+#define QUICK_TAP(kc) register_code(kc); wait_ms(1); unregister_code(kc)
 #define SHIFT_TAP(kc) register_code(KC_LSFT); register_code(kc); wait_ms(5); unregister_code(kc); unregister_code(KC_LSFT)
 void debug_chord(uint16_t extchord)
 {
@@ -708,27 +711,30 @@ void debug_translate_and_send(uint16_t chord)
 }
 
 
-
 // Called when a translated key is sent down the USB
-void handle_modifier_after_tap(uint16_t modifier_chord_key, uint16_t keycode, uint16_t opposite_chord, uint16_t temp_mod_bit, uint16_t lock_mod_bit) {
-    if (temp_mod_bit & steno_state) {
-        // if mod/toggle is not locked...  make this part more robust against halfway done chords
+void handle_modifier_after_tap(uint16_t modifier_chord_key, uint16_t keycode, struct steno_halves opst_half,
+                               uint16_t temp_mod_bit, uint16_t lock_mod_bit) {
+    if (temp_mod_bit & steno_state) { // the steno_state thing is removed when modifier is unregistered
         if (!(lock_mod_bit & steno_state)) {
-            steno_state        &= ~temp_mod_bit;
-            halves[LEFT].mods  &= ~temp_mod_bit;
-            halves[RIGHT].mods &= ~temp_mod_bit;
-            if (!(opposite_chord & modifier_chord_key) && keycode) {//...and a mod is not being held down in the opposite hand chord:
-               unregister_code(keycode);
-            }}}}
-#define HANDLE_MODIFIER_AFTER_TAP(mod_name, opposite_chord) \
-        handle_modifier_after_tap(m ## mod_name, KC_L ## mod_name, opposite_chord, temp_mod ## mod_name, lock_mod ## mod_name)
+            DEBUG_TAP(9);
+            if (!(opst_half.mods & temp_mod_bit)) {//...and a mod is not being held down in the opposite hand chord:
+                steno_state &= ~temp_mod_bit;
+                unregister_code(keycode);
+            } else {
+                opst_half.mods_to_be_cleared_on_mod_up |= temp_mod_bit;
+            }
+        }
+    }
+}
+#define HANDLE_MODIFIER_AFTER_TAP(mod_name, opst_half) \
+        handle_modifier_after_tap(m ## mod_name, KC_L ## mod_name, opst_half, temp_mod ## mod_name, lock_mod ## mod_name)
 #define HANDLE_ALL_MODIFIERS_AFTER_TAP() \
-           HANDLE_MODIFIER_AFTER_TAP(SFT, opposite_chord); \
-           HANDLE_MODIFIER_AFTER_TAP(CTL, opposite_chord); \
-           HANDLE_MODIFIER_AFTER_TAP(ALT, opposite_chord); \
-           HANDLE_MODIFIER_AFTER_TAP(GUI, opposite_chord); \
+           HANDLE_MODIFIER_AFTER_TAP(SFT, opst_half); \
+           HANDLE_MODIFIER_AFTER_TAP(CTL, opst_half); \
+           HANDLE_MODIFIER_AFTER_TAP(ALT, opst_half); \
+           HANDLE_MODIFIER_AFTER_TAP(GUI, opst_half); \
 
-void tap_key(uint16_t * keyarray, uint16_t opposite_chord)
+void tap_key(uint16_t * keyarray, struct steno_halves opst_half)
 {
     if (keyarray) {
        uint16_t length = pgm_read_word_near(keyarray);
@@ -745,11 +751,20 @@ void tap_key(uint16_t * keyarray, uint16_t opposite_chord)
                did_firmware_translation_during_stroke = 1;}
        }
        if (shifted && !(steno_state & mSFT)) unregister_code(KC_LSFT);
-       if (steno_state & 0x008F) { // if any modifier key or ALF has just been pressed down
-   //|   ********** Watch out for the bitmask above if you're adding new modifiers/modeswitchers
-           HANDLE_ALL_MODIFIERS_AFTER_TAP();
-           if (!(opposite_chord & mModtoggle) && !(lock_modALF & steno_state)) {
-               steno_state &= ~temp_modALF;
+       if (did_firmware_translation_during_stroke) {
+           if (steno_state & 0x00FF) { // if any modifier key or ALF has just been pressed down
+               //|   ********** Watch out for the bitmask above if you're adding new modifiers/modeswitchers
+               DEBUG_TAP(8);
+               HANDLE_ALL_MODIFIERS_AFTER_TAP();
+               if (!(lock_modALF & steno_state)) {
+                   if (opst_half.mods & mModtoggle) {
+                       opst_half.mods_to_be_cleared_on_mod_up |= temp_modALF;
+                       DEBUG_TAP(F);
+                   } else {
+                       steno_state &= ~temp_modALF;
+                       DEBUG_TAP(C);
+                   }
+               }
            }
        }
     }
@@ -796,26 +811,38 @@ uint16_t disqualified_as_mod(uint16_t chord, uint16_t opst_chord) {
 void control_one_modifier(uint16_t modifier_chord_key, uint16_t keycode,
                           struct steno_halves half, struct steno_halves opst_half,
                           uint16_t temp_mod_bit, uint16_t lock_mod_bit, uint16_t newkey, uint8_t pressed) {
-    if (pressed) { // if newkey was pressed down
+    if (newkey & modifier_chord_key) {
+      if (pressed) { // if newkey was pressed down
                   //it almost doesn't matter if it was a down press or not... we're not singling out the key that was just pressed,
                   // but the entire chord. Is that what I wanted to do? It would be helpful to know which key changed and whether it
                   // was up or down. 
-        if ((newkey & modifier_chord_key) && !(steno_state & temp_mod_bit) && !(steno_state & lock_mod_bit)) { // mod was pushed, not already active
-            if (mModtoggle & half.chord) { // This doesn't require mModtoggle be held, but that it was touched during that half's stroke
-                // Mod toggle
-                if (disqualified_as_mod(half.chord, opst_half.chord) || opst_half.chord == 0) {
+          // big TODO: make it so a second keypress when a modifier is left sticky and unused cancels the modifier.
+          // But make sure everything else works first.
+        if (!(steno_state & lock_mod_bit)) { // mod was pushed, not already active
+            DEBUG_TAP(1);
+            if (half.mods & temp_modALF) {
+                DEBUG_TAP(2);
+                if (!(opst_half.mods & temp_modALF)) {
+                    DEBUG_TAP(3);
                     register_code(keycode);
                     half.mods |= temp_mod_bit;
                     steno_state |= temp_mod_bit;
                 } else {
+                    DEBUG_TAP(4);
                     half.mods_awaiting_opp_dsqf |= temp_mod_bit; } 
             } else {
+                DEBUG_TAP(5);
                 half.mods_awaiting_toggle |= temp_mod_bit; }
         }
-    } else {       // if newkey was just released 
-        if (!(newkey & modifier_chord_key) && (steno_state & (temp_mod_bit | lock_mod_bit))) {
-            unregister_code(keycode);
+      } else {       // if newkey was just released 
+        half.mods &= ~temp_mod_bit; // Remove the temp_mod_bit when it's released on any key up
+                                    // That bit on a half struct just means the key is being held down.
+        if (!(steno_state & lock_mod_bit) && half.mods_to_be_cleared_on_mod_up & temp_mod_bit) {
+            DEBUG_TAP(6);            
+            steno_state &= ~temp_mod_bit;
+            unregister_code(keycode);// Only unregister the key if the modifier has been consumed at least once.
         } // else, nothing changes, modifier is stuck until a translated character consumes it
+      }
     }
 }
 
@@ -828,14 +855,25 @@ void control_one_modifier(uint16_t modifier_chord_key, uint16_t keycode,
     REGISTER_KEY_IF_IN_MASK(ALT, mask); \
     REGISTER_KEY_IF_IN_MASK(GUI, mask)
 
-#define CLEAR_MODIFIER_IF_UNLOCKED(mod_name) \
-    if (!(lock_mod ## mod_name & steno_state)) { unregister_code(KC_L ## mod_name); }
+// This macro has three conditions for clearing a modifier key:
+//  It was not in lock mode.
+//  It was being held by the current hand.
+//  It was not also being held by the opposite hand.
+// Modifiers in this condition are cleared of:
+//   their key down state
+//   the steno_state flag for the temporary modifier
+#define CLEAR_MODIFIER_IF_UNLOCKED(mod_name, half, opst_half) \
+    if (!(lock_mod ## mod_name & steno_state) && \
+         (temp_mod ## mod_name & half.mods) && \
+         !(temp_mod ## mod_name & opst_half.mods)) \
+            { unregister_code(KC_L ## mod_name); \
+              steno_state &= ~temp_mod ## mod_name; }
 
-#define CLEAR_EACH_UNLOCKED_MODIFIER() \
-    CLEAR_MODIFIER_IF_UNLOCKED(SFT); \
-    CLEAR_MODIFIER_IF_UNLOCKED(CTL); \
-    CLEAR_MODIFIER_IF_UNLOCKED(ALT); \
-    CLEAR_MODIFIER_IF_UNLOCKED(GUI); 
+#define CLEAR_EACH_UNLOCKED_MODIFIER(half, opst_half) \
+    CLEAR_MODIFIER_IF_UNLOCKED(SFT, half, opst_half); \
+    CLEAR_MODIFIER_IF_UNLOCKED(CTL, half, opst_half); \
+    CLEAR_MODIFIER_IF_UNLOCKED(ALT, half, opst_half); \
+    CLEAR_MODIFIER_IF_UNLOCKED(GUI, half, opst_half); 
 
 #define CONTROL_ONE_MODIFIER(mod_name, half, opst_half, newkey, pressed) \
         control_one_modifier(m ## mod_name, KC_L ## mod_name, half, opst_half, temp_mod ## mod_name, lock_mod ## mod_name, newkey, pressed)
@@ -844,30 +882,42 @@ void control_temporary_modifiers(struct steno_halves half, struct steno_halves o
     // FIXME Modifiers aren't actually triggering
     if ((half.chord & NON_MOD_MASK) && (half.chord & mModtoggle)) {
         // clear each modifier that is not locked, not the whole keyboard
-        half.mods_awaiting_opp_dsqf      |= half.mods;
-        opst_half.mods_awaiting_opp_dsqf |= opst_half.mods;  // not sure if I need to save it in these things or not...
-        CLEAR_EACH_UNLOCKED_MODIFIER();  //TODO should be clear each locked modifier on that particular hand at least for now
-        // clear out all temporary modifier state.
-        //steno_state &= 0xFF00; //upper bits are for locks, keep those
-        half.mods = opst_half.mods = 0;
+        //half.mods_awaiting_opp_dsqf      |= half.mods;  Why save state for later on this hand?
+        // It's never going to be used until key up again.
+        // This is where the hand becomes disqualified, if there are mods awaiting opposite disqualification, this is where they must be trigger
+        //
+        REGISTER_EACH_KEY_IN_MASK(opst_half.mods_awaiting_opp_dsqf);
+        opst_half.mods |= opst_half.mods_awaiting_opp_dsqf;  // not sure if I need to save it in these things or not...
+        steno_state |= opst_half.mods_awaiting_opp_dsqf;
+        opst_half.mods_awaiting_opp_dsqf = 0;
+        CLEAR_EACH_UNLOCKED_MODIFIER(half, opst_half);
+        // clear out all temporary modifier held keys triggered by current hand only, but only if the opposite hand
+        // is not still modifying.
+        half.mods = 0;
+        half.disqualified_keys_pressed = 1;
     } else {
-        if (disqualified_as_mod(opst_half.chord, half.chord) && half.mods_awaiting_opp_dsqf) {
-            REGISTER_EACH_KEY_IN_MASK(half.mods_awaiting_opp_dsqf);
-            half.mods |= half.mods_awaiting_opp_dsqf;
-            steno_state |= half.mods_awaiting_opp_dsqf;
-            half.mods_awaiting_opp_dsqf = 0; 
-        } else if (newkey & mModtoggle) {
+        if (newkey & mModtoggle) {
             if (pressed) { // probably more than one way to do this would still work
-                REGISTER_EACH_KEY_IN_MASK(half.mods_awaiting_toggle);
-                half.mods |= half.mods_awaiting_toggle;
-                steno_state |= half.mods_awaiting_toggle;
-                half.mods_awaiting_toggle = 0;
-                if (!(steno_state & lock_modALF)) steno_state |= temp_modALF;
+                if (half.mods_awaiting_toggle) {
+                    REGISTER_EACH_KEY_IN_MASK(half.mods_awaiting_toggle);
+                    half.mods |= half.mods_awaiting_toggle;
+                    steno_state |= half.mods_awaiting_toggle;
+                    half.mods_awaiting_toggle = 0;
+                }
+                if (!(steno_state & lock_modALF)) {
+                    steno_state |= temp_modALF;
+                    half.mods |= temp_modALF;
+                }
             } else { //if key released
-                if (did_firmware_translation_during_stroke && !(steno_state & lock_modALF))
-                    steno_state &= ~temp_modALF;
+                //if (did_firmware_translation_during_stroke && !(steno_state & lock_modALF)) {
+                half.mods &= ~temp_modALF;  //Clear that half's flag either way, because that shows that
+                                            //mModtoggle, even if it did qualify, is now released.
+                if (half.mods_to_be_cleared_on_mod_up & temp_modALF){
+                    DEBUG_TAP(Z);
+                    steno_state &= ~temp_modALF; // Unsticky the alpha mode for next press, because it has been consumed.
+                }
             }
-        } else {
+        } else {  // allow these whether or not in alf mode so they can add to waiting lists
             CONTROL_ONE_MODIFIER(SFT, half, opst_half, newkey, pressed);
             CONTROL_ONE_MODIFIER(CTL, half, opst_half, newkey, pressed);
             CONTROL_ONE_MODIFIER(ALT, half, opst_half, newkey, pressed);
@@ -984,8 +1034,10 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
           // Probable place that's wrong: control_temporary_modifiers needs to differentiate
           // between key up and key down. Locking of modifiers should happen on key up only.
           if (newkey) {
-              if (leftkeypressed)  control_temporary_modifiers(halves[LEFT], halves[RIGHT], newkey, pressed);
-              if (rightkeypressed) control_temporary_modifiers(halves[RIGHT], halves[LEFT], newkey, pressed);
+              if (leftkeypressed & !halves[LEFT].disqualified_keys_pressed)
+                  control_temporary_modifiers(halves[LEFT], halves[RIGHT], newkey, pressed);
+              if (rightkeypressed & !halves[RIGHT].disqualified_keys_pressed)
+                  control_temporary_modifiers(halves[RIGHT], halves[LEFT], newkey, pressed);
 
               /*if (pressed) {
                   if (leftkeypressed) {
@@ -1001,21 +1053,23 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
               if (steno_state & (temp_modALF | lock_modALF)) { // If any alphabet modifier was recently pushed, keep doing this
                   if (lpressed_count == 0 && lchord) {       //                                instead of sending bolt chords.
                       if (lchord == mX) { QUICK_TAP(KC_BSPC); did_firmware_translation_during_stroke = 1;
-                      } else if (!(lchord & mModtoggle)) { tap_key(translate(lchord>>6), rcurchord); }
+                      } else if (!(lchord & mModtoggle)) { tap_key(translate(lchord>>6), halves[RIGHT]); }
                       //QUICK_TAP(KC_L); debug_chord(lchord); QUICK_TAP(KC_ENT);
                       lchord = 0;
-                      halves[LEFT].mods_awaiting_toggle = halves[LEFT].mods_awaiting_opp_dsqf = 0;
+                      halves[LEFT].mods_awaiting_toggle = halves[LEFT].mods_awaiting_opp_dsqf = \
+                          halves[LEFT].disqualified_keys_pressed = halves[LEFT].mods_to_be_cleared_on_mod_up = 0;
                   }
                   if (rpressed_count == 0 && rchord) {
                       //TODO fix asterisk backspaces so they don't go off with locked modifiers, but do put the modifier(s) back
                       //once they're done.
                       if (rchord == mX) { QUICK_TAP(KC_BSPC); did_firmware_translation_during_stroke = 1;
-                      } else if (!(rchord & mModtoggle)) { tap_key(translate(rchord>>6), lcurchord); }
+                      } else if (!(rchord & mModtoggle)) { tap_key(translate(rchord>>6), halves[LEFT]); }
                       // TODO TODO also // this // probably doesn't work the way I thought it would
                       // and then these two pieces can probably get refactored down pretty easily
                       //QUICK_TAP(KC_R); debug_chord(rchord); QUICK_TAP(KC_ENT);
                       rchord = 0;
-                      halves[RIGHT].mods_awaiting_toggle = halves[RIGHT].mods_awaiting_opp_dsqf = 0;
+                      halves[RIGHT].mods_awaiting_toggle = halves[RIGHT].mods_awaiting_opp_dsqf = \
+                          halves[RIGHT].disqualified_keys_pressed = halves[RIGHT].mods_to_be_cleared_on_mod_up = 0;
                   }
               }
           }
@@ -1031,7 +1085,7 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
                       // But not on the way out of alphabet temporary/sticky once mode.
                   } else if (!steno_state) { //if there's no modifiers to worry about, and nothing just translated through firmware...
                       send_chord();
-                      QUICK_TAP(KC_B);
+                      DEBUG_TAP(B);
                       //QUICK_TAP(KC_B); debug_chord(lchord); QUICK_TAP(KC_B); debug_chord(rchord); QUICK_TAP(KC_ENT); // uncomment to watch chords without plover translating
                       clear_keyboard();
                       chord[0] = chord[1] = chord[2] = chord[3] = 0;
