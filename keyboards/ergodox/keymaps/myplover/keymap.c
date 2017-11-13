@@ -1072,14 +1072,15 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
                       // TODO:
                       // Last but not least, send a suppress space chord on the way out of alphabet locked mode
                       // But not on the way out of alphabet temporary/sticky once mode.
-                  } else if (!steno_state) { //if there's no modifiers to worry about, and nothing just translated through firmware...
+                  } else if (!(steno_state & 0xFF00)) { // Only block this path if a mode lock flag is active
+                      if (steno_state) { steno_state = 0xFF00 & steno_state; } // clear any temporary modifiers that somehow made it through
+                      clear_keyboard(); // clear any modifiers somehow left registered on the keyboard
                       send_chord();
                       DEBUG_TAP(B);
                       //QUICK_TAP(KC_B); debug_chord(lchord); QUICK_TAP(KC_B); debug_chord(rchord); QUICK_TAP(KC_ENT); // uncomment to watch chords without plover translating
-                      clear_keyboard();
-                      chord[0] = chord[1] = chord[2] = chord[3] = 0;
                       lchord = rchord = lcurchord = rcurchord = 0;
                   }
+                  chord[0] = chord[1] = chord[2] = chord[3] = 0;
               }
           }
           return MACRO_NONE;
