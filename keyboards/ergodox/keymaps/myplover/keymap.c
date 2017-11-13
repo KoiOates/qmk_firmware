@@ -886,6 +886,7 @@ void control_temporary_modifiers(struct steno_halves * half, struct steno_halves
     } else {
         if (newkey & mModtoggle) {
             if (pressed) { // probably more than one way to do this would still work
+                half->mods_to_be_cleared_on_mod_up = 0;
                 if (half->mods_awaiting_toggle) {
                     REGISTER_EACH_KEY_IN_MASK(half->mods_awaiting_toggle);
                     half->mods |= half->mods_awaiting_toggle;
