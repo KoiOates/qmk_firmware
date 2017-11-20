@@ -1,6 +1,6 @@
 Firmware fingerspelling and modifier keys, WIP
 
-Disclaimer: I accept no responsibility for brain damaged caused by
+Disclaimer: I accept no responsibility for brain damage caused by
 reading my scatter-brained source code. Comments that may appear
 to explain what I was thinking may actually only be relevant to code
 that I deleted because it didn't work.
@@ -9,21 +9,20 @@ To try it out, enter bolt/fingerspelling mode with upper-left key of
 the right hand.
 
 Hold number bar on the ring finger and fingerspell on the other, or
-tap and release to type a single character on either hand (probably
-going to change this to a mode lock for this toggle key).
+tap and release by itself to toggle alphabet mode locking.
 While holding ring finger toggle key, include middle finger number
 bar to add shift, inner thumb key to add alt, outer thumb key to add
 control.
 
-When I add back the locking function (which has been gone since I
-rewrote this because I forgot some important things about how C works
-and couldn't debug it for two weeks), the keymap will also let you
-alternate hands to type fingerspelled characters. Characters in this
-mode are sent when all keys on an individual half of the keyboard are
-released, so you can be releasing a chord on one hand while starting
-one on the other without stacking issues. That was a problem I kept
-having when I tried to type faster using a python dictionary version
-of two handed fingerspelling.
+TODO reimplement broken locking mode
+If alphabet mode is locked, you can alternate hands to type
+fingerspelled characters. Characters in this mode are sent when all
+keys on an individual half of the keyboard are released, so you can
+be releasing a chord on one hand while starting one on the other.
+When I tried this as a Python dictionary, I could do two letters at
+once, one on each hand, as a whole chord, but it had to be left letter
+first always and never quite felt natural. The back and forth motion
+feels like something I could keep getting faster at.
 
 For now, fingerspelled characters are sent directly by the Ergodox,
 and anything that doesn't meet the criteria to trigger a character
@@ -51,3 +50,7 @@ way).
 Lines 198 through 228 of doublefist.py is basically the
 dictionary, along with a few other things added by the script
 doublefist_firmware_maker.py.
+
+
+TODO Fix transition code so order of modifier and modtoggle being pushed
+doesn't matter.

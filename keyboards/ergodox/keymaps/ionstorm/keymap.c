@@ -946,6 +946,29 @@ bool process_record_user (uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
+//void process_one_half_chord(struct steno_halves * half, struct steno_halves * opst_half) {
+//    //TODO fix asterisk backspaces so they don't go off with locked modifiers, but do put the modifier(s) back
+//    //once they're done.
+//    if (half->chord == mX) {
+//        QUICK_TAP(KC_BSPC); did_firmware_translation_during_stroke = 1;
+//    } else if (!(half->chord & mModtoggle)) {
+//              // TODO TODO also // this // probably doesn't work the way I thought it would
+//              // and then these two pieces can probably get refactored down pretty easily
+//        tap_key(translate(half->chord>>6), opst_half);
+//    } else if ((half->chord & (mModlock | mModtoggle)) && !(half->disqualified_keys_pressed)) {
+//        steno_state ^= lock_modALF;
+//    }
+//
+//    if (half->mods) {
+//        half->mods &= ~half->mods_to_be_cleared_on_mod_up;
+//    }
+//
+//    half->chord = 0;
+//    opst_half->mods_awaiting_toggle = opst_half->mods_awaiting_opp_dsqf = \
+//      opst_half->disqualified_keys_pressed = opst_half->mods_to_be_cleared_on_mod_up = 0;
+//}
+//
+
 #define L_TRACK_COUNT() lchord = lchord | newkey; lcurchord = lcurchord ^ newkey; leftkeypressed = 1;\
                         if (newkey) { if (pressed) lpressed_count++; else lpressed_count--; }
 #define R_TRACK_COUNT() rchord = rchord | newkey; rcurchord = rcurchord ^ newkey; rightkeypressed = 1;\
